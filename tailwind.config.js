@@ -61,6 +61,8 @@ module.exports = {
           "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff95' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
         "chevron-black":
           "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300000095' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+        "chevron-primary":
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%230074d995' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
       },
       container: {
         center: true,
@@ -73,9 +75,9 @@ module.exports = {
       addBase({
         // Default colors
         ":root": {
-          "--color-theme-1": toRGB("#03045e"),
-          "--color-theme-2": toRGB("#0c4a6e"),
-          "--color-primary": toRGB("#03045e"),
+          "--color-theme-1": toRGB("#FFCA3B"),
+          "--color-theme-2": toRGB("#0074D9"),
+          "--color-primary": toRGB("#0074D9"),
           "--color-secondary": toRGB(colors.slate["200"]),
           "--color-success": toRGB(colors.teal["600"]),
           "--color-info": toRGB(colors.cyan["600"]),

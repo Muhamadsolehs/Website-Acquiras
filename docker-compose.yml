@@ -1,0 +1,9 @@
+services:
+  acquiras:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: acquiras
+    ports:
+      - "49410:80"
+    restart: unless-stopped

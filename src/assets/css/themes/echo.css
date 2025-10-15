@@ -86,15 +86,15 @@
           opacity: theme("opacity.100");
         }
         .side-menu__link__title {
-          color: theme("colors.theme.1");
+          color: theme("colors.theme.2");
           font-weight: theme("fontWeight.medium");
         }
       }
       &__icon {
         flex: none;
         opacity: theme("opacity.80");
-        stroke: theme("colors.theme.1");
-        fill: theme("colors.theme.1" / 10%);
+        stroke: theme("colors.theme.2");
+        fill: theme("colors.theme.2" / 10%);
       }
       &__title {
         overflow: hidden;
@@ -114,7 +114,7 @@
         font-size: theme("fontSize.xs");
         margin-left: theme("spacing[2.5]");
         font-weight: theme("fontWeight.medium");
-        background-color: theme("colors.theme.1" / 15%);
+        background-color: theme("colors.theme.2" / 15%);
       }
       &__chevron {
         margin-left: auto;

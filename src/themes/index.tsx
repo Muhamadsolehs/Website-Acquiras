@@ -53,7 +53,6 @@ function Main() {
           ></path>
         </svg>
       </Transition>
-      <ThemeSwitcher />
     </div>
   );
 }
