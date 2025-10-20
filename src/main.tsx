@@ -5,12 +5,15 @@ import { Provider } from "react-redux";
 import { store } from "./stores/store";
 import Router from "./router";
 import "./assets/css/app.css";
+import { AuthProvider } from "./context/AuthContext";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <BrowserRouter>
     <Provider store={store}>
-      <Router />
+      <AuthProvider>
+        <Router />
+        <ScrollToTop />
+      </AuthProvider>
     </Provider>
-    <ScrollToTop />
   </BrowserRouter>
 );

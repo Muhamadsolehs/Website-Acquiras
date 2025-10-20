@@ -21,8 +21,10 @@ import SwitchAccount from "@/components/SwitchAccount";
 import NotificationsPanel from "@/components/NotificationsPanel";
 import ActivitiesPanel from "@/components/ActivitiesPanel";
 import logo from "@/assets/images/logo/acquiras.png";
+import useLogout from "@/hooks/useLogout";
 
 function Main() {
+  const { logout } = useLogout();
   const dispatch = useAppDispatch();
   const compactMenu = useAppSelector(selectCompactMenu);
   const setCompactMenu = (val: boolean) => {
@@ -463,9 +465,7 @@ function Main() {
                       Profile Info
                     </Menu.Item>
                     <Menu.Item
-                      onClick={() => {
-                        navigate("login");
-                      }}
+                      onClick={logout}
                     >
                       <Lucide icon="Power" className="w-4 h-4 mr-2" />
                       Logout

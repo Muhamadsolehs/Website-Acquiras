@@ -16,6 +16,7 @@ import AddPenilaian from "../pages/Penilaian/add";
 import EditPenilaian from "../pages/Penilaian/edit";
 import SettingPenilaian from "../pages/Penilaian/setting";
 import Profile from "../pages/Settings";
+import ProtectedRoute from "@/components/Protected";
 
 
 import Layout from "../themes";
@@ -24,7 +25,11 @@ function Router() {
   const routes = [
     {
       path: "/",
-      element: <Layout />,
+      element: (
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      ),
       children: [
         {
           path: "/",
