@@ -153,7 +153,11 @@ function Main() {
                   <div className="absolute w-[21%] inset-0 m-auto h-[120%] rounded-full"></div>
                   <div className="absolute w-[21%] right-0 inset-y-0 my-auto rounded-full opacity-50 h-[75%]"></div>
                 </div> */}
-                <img src={logo} alt="Acquiras" className="w-full h-full object-cover" />
+                <img
+                  src={logo}
+                  alt="Acquiras"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="ml-3.5 group-[.side-menu--collapsed.side-menu--on-hover]:xl:opacity-100 group-[.side-menu--collapsed]:xl:opacity-0 transition-opacity font-medium">
                 ACQUIRAS <br />
@@ -394,7 +398,7 @@ function Main() {
                   className="dark:before:bg-chevron-white group-[.top-bar--active]:text-primary group-[.top-bar--active]:before:bg-chevron-primary"
                   to="/"
                 >
-                  Dashboards
+                  Dashboard
                 </Breadcrumb.Link>
               </Breadcrumb>
               {/* END: Breadcrumb */}
@@ -405,7 +409,7 @@ function Main() {
               >
                 <div className="bg-white/[0.12] dark:bg-darkmode-900/30 dark:border-transparent border-transparent border w-[350px] flex items-center py-2 px-3.5 rounded-[0.5rem] text-white/60 cursor-pointer hover:bg-white/[0.15] transition-colors duration-300 hover:duration-100">
                   <Lucide icon="Search" className="w-[18px] h-[18px]" />
-                  <div className="ml-2.5 mr-auto">Quick search...</div>
+                  <div className="ml-2.5 mr-auto">Pencarian Cepat...</div>
                   <div>⌘K</div>
                 </div>
               </div>
@@ -449,11 +453,8 @@ function Main() {
                   </a>
                 </div>
                 <Menu className="ml-5">
-                  <Menu.Button className="overflow-hidden rounded-full w-[36px] h-[36px] border-[3px] border-white/[0.15] image-fit">
-                    <img
-                      alt="Tailwise - Admin Dashboard Template"
-                      src={users.fakeUsers()[0].photo}
-                    />
+                  <Menu.Button className="flex items-center justify-center rounded-full w-[36px] h-[36px] border-[3px] border-white/[0.15] bg-slate-700">
+                    <Lucide icon="User" className="w-5 h-5 text-white" />
                   </Menu.Button>
                   <Menu.Items className="w-56 mt-1">
                     <Menu.Item
@@ -462,13 +463,11 @@ function Main() {
                       }}
                     >
                       <Lucide icon="Users" className="w-4 h-4 mr-2" />
-                      Profile Info
+                      Profil
                     </Menu.Item>
-                    <Menu.Item
-                      onClick={logout}
-                    >
+                    <Menu.Item onClick={logout}>
                       <Lucide icon="Power" className="w-4 h-4 mr-2" />
-                      Logout
+                      Keluar
                     </Menu.Item>
                   </Menu.Items>
                 </Menu>
