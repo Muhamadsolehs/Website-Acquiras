@@ -5,12 +5,14 @@ interface AuthContextType {
     isAuthenticated: boolean | null;
     loading: boolean;
     setIsAuthenticated: (val: boolean) => void;
+    updateUser: (data: Record<string, any>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
     isAuthenticated: null,
     loading: true,
     setIsAuthenticated: () => { },
+    updateUser: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -23,11 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const res = await api.get("/auth/me");
                 setIsAuthenticated(true);
                 const userData = res.data.user;
-                const filteredUser = {
-                    name: userData.name,
-                    email: userData.email,
-                };
-                localStorage.setItem("user", JSON.stringify(filteredUser));
+                localStorage.setItem("user", JSON.stringify(userData));
             } catch (err: any) {
                 if (err.response?.status !== 401) {
                     console.error("❌ Auth check error:", err);
@@ -41,9 +39,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         checkAuth();
     }, []);
 
+    const updateUser = async (data: Record<string, any>) => {
+        try {
+            const res = await api.put("/auth/update", data, {withCredentials: true});
+            const userData = res.data.user;
+            localStorage.setItem("user", JSON.stringify(userData));
+        } catch (err: any) {
+            console.error("❌ Update user error:", err);
+        }
+    };
+
+
     return (
         <AuthContext.Provider
-            value={{ isAuthenticated, loading, setIsAuthenticated }}
+            value={{ isAuthenticated, loading, setIsAuthenticated, updateUser }}
         >
             {children}
         </AuthContext.Provider>

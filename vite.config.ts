@@ -10,6 +10,9 @@ export default defineConfig({
       include: ["tailwind.config.js", "node_modules/**"],
     },
   },
+  server:{
+port: 3001
+  },
   optimizeDeps: {
     include: ["tailwind-config"],
   },
