@@ -14,7 +14,7 @@ import Penilaian from "../pages/Penilaian";
 import AddPenilaian from "../pages/Penilaian/add";
 import EditPenilaian from "../pages/Penilaian/edit";
 import SettingPenilaian from "../pages/Penilaian/setting";
-import Profile from "../pages/Settings";
+import Profile from "../pages/Profile";
 import ProtectedRoute from "@/components/Protected";
 
 import Layout from "../themes";

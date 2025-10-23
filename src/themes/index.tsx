@@ -3,6 +3,7 @@ import { selectPageLoader } from "@/stores/pageLoaderSlice";
 import { useAppSelector } from "@/stores/hooks";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { Transition } from "@headlessui/react";
+import { Toaster } from "sonner";
 
 function Main() {
   const theme = useAppSelector(selectTheme);
@@ -11,6 +12,7 @@ function Main() {
 
   return (
     <div>
+      <Toaster position="top-right" />
       <Transition
         show={!pageLoader}
         enter="transition-opacity duration-75"

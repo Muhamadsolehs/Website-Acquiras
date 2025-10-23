@@ -22,6 +22,8 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 import ActivitiesPanel from "@/components/ActivitiesPanel";
 import logo from "@/assets/images/logo/acquiras.png";
 import useLogout from "@/hooks/useLogout";
+const profile = "src/assets/images/avatar/person_1.png";
+
 
 function Main() {
   const { logout } = useLogout();
@@ -453,8 +455,11 @@ function Main() {
                   </a>
                 </div>
                 <Menu className="ml-5">
-                  <Menu.Button className="flex items-center justify-center rounded-full w-[36px] h-[36px] border-[3px] border-white/[0.15] bg-slate-700">
-                    <Lucide icon="User" className="w-5 h-5 text-white" />
+                  <Menu.Button className="overflow-hidden rounded-full w-[36px] h-[36px] border-[3px] border-white/[0.15] image-fit">
+                    <img
+                      alt="Tailwise - Admin Dashboard Template"
+                      src={profile}
+                    />
                   </Menu.Button>
                   <Menu.Items className="w-56 mt-1">
                     <Menu.Item
