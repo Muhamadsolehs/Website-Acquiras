@@ -194,7 +194,7 @@ function Main() {
                       Status
                     </Table.Td>
                     <Table.Td className="w-20 py-4 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                      Action
+                      Aksi
                     </Table.Td>
                   </Table.Tr>
                 </Table.Thead>
