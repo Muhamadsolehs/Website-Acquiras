@@ -26,6 +26,7 @@ const profile = "src/assets/images/avatar/person_1.png";
 
 
 function Main() {
+  const LOGIN_SITE = import.meta.env.VITE_URL_BACK || "http://localhost:3000";
   const { logout } = useLogout();
   const dispatch = useAppDispatch();
   const compactMenu = useAppSelector(selectCompactMenu);
@@ -172,6 +173,14 @@ function Main() {
               className="hidden group-[.side-menu--collapsed.side-menu--on-hover]:xl:opacity-100 group-[.side-menu--collapsed]:xl:rotate-180 group-[.side-menu--collapsed]:xl:opacity-0 transition-[opacity,transform] 3xl:flex items-center justify-center w-[20px] h-[20px] ml-auto border rounded-full border-slate-600/40 hover:bg-slate-600/5 dark:border-darkmode-100"
             >
               <Lucide icon="ArrowLeft" className="w-3.5 h-3.5 stroke-[1.3]" />
+            </a>
+          </div>
+          <div
+            className="flex items-start justify-start w-full px-4 border-t border-slate-200/60 dark:border-darkmode-400">
+            <a href={`${LOGIN_SITE}/select-app`}
+              className="flex items-center justify-center p-1.5 mt-2 rounded-xl border border-theme-2 text-theme-2">
+              <Lucide icon="ArrowLeftCircle" className="w-3.5 h-3.5 stroke-[1.3] me-2" />
+              Kembali Pilih Aplikasi
             </a>
           </div>
           <div
