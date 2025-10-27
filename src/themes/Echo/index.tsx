@@ -22,7 +22,7 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 import ActivitiesPanel from "@/components/ActivitiesPanel";
 import logo from "@/assets/images/logo/acquiras.png";
 import useLogout from "@/hooks/useLogout";
-const profile = "src/assets/images/avatar/person_1.png";
+import profile from "@/assets/images/avatar/person_1.png";
 
 
 function Main() {
