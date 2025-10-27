@@ -177,11 +177,11 @@ function Main() {
           </div>
           <div
             className="flex items-start justify-start w-full px-4 border-t border-slate-200/60 dark:border-darkmode-400">
-            <a href={`${LOGIN_SITE}/select-app`}
+            {/* <a href={`${LOGIN_SITE}/select-app`}
               className="flex items-center justify-center p-1.5 mt-2 rounded-xl border border-theme-2 text-theme-2">
               <Lucide icon="ArrowLeftCircle" className="w-3.5 h-3.5 stroke-[1.3] me-2" />
               Kembali Pilih Aplikasi
-            </a>
+            </a> */}
           </div>
           <div
             ref={scrollableRef}
@@ -191,6 +191,29 @@ function Main() {
             ])}
           >
             <ul className="scrollable">
+              <li className="mt-2 mb-3 border-b border-slate-200/60 dark:border-darkmode-400">
+                <a
+                  href={`${LOGIN_SITE}/select-app`}
+                  className={clsx([
+                    "side-menu__link group hover:bg-theme-1/10 hover:text-theme-2 transition-colors",
+                  ])}
+                >
+                  <Lucide
+                    icon="ArrowLeftCircle"
+                    className="side-menu__link__icon text-theme-1 group-hover:text-theme-1"
+                  />
+                  <div
+                    className={clsx([
+                      "side-menu__link__title font-medium whitespace-nowrap transition-all duration-300",
+                      !compactMenu
+                        ? "opacity-0 w-0 overflow-hidden"
+                        : "opacity-100 w-auto ml-2",
+                    ])}
+                  >
+                  </div>
+                  Kembali Pilih Aplikasi
+                </a>
+              </li>
               {/* BEGIN: First Child */}
               {formattedMenu.map((menu, menuKey) =>
                 typeof menu == "string" ? (
