@@ -17,7 +17,7 @@ export interface SideMenuState {
 
 const initialState: SideMenuState = {
   menu: [
-    "APPS",
+    "Admin Menu",
     {
       icon: "GaugeCircle",
       pathname: "/",
@@ -25,33 +25,128 @@ const initialState: SideMenuState = {
     },
     {
       icon: "Album",
-      pathname: "/master-permohonan",
-      title: "Master Permohonan",
-    },
-    {
-      icon: "BookMarked",
-      pathname: "/pemohon/master-data",
+      pathname: "/master-data",
       title: "Master Data",
       subMenu: [
         {
           icon: "LayoutPanelTop",
-          pathname: "/pemohon",
-          title: "Data Pemohon",
+          pathname: "/master-data/master-akun",
+          title: "Data Master Akun",
         },
         {
-          icon: "LayoutPanelLeft",
-          pathname: "/ahli",
-          title: "Data Ahli",
+          icon: "LayoutPanelTop",
+          pathname: "/master-data/master-vendor",
+          title: "Data Master Vendor",
         },
       ],
     },
     {
-      icon: "Settings2",
-      pathname: "/penilaian",
-      title: "Setting Penilaian",
+      icon: "MonitorDot",
+      pathname: "/monitoring-pengadaan",
+      title: "Monitoring Pengadaan",
     },
-
-
+    {
+      icon: "FlameKindling",
+      pathname: "/master-lelang",
+      title: "Master Lelang",
+    },
+    {
+      icon: "MonitorOff",
+      pathname: "/daftar-hitam",
+      title: "Daftar Hitam",
+    },
+    {
+      icon: "MonitorCheck",
+      pathname: "/monitoring-progress-pekerjaan",
+      title: "Progress Pekerjaan",
+    },
+    {
+      icon: "Settings2",
+      pathname: "/pengaturan",
+      title: "Pengaturan",
+      subMenu: [
+        {
+          icon: "ShieldCheck",
+          pathname: "/pengaturan/log",
+          title: "Log Activity",
+        },
+        {
+          icon: "ActivitySquare",
+          pathname: "/pengaturan/other",
+          title: "Other Settings",
+        },
+      ],
+    },
+    "Vendor Menu",
+    {
+      icon: "GaugeCircle",
+      pathname: "/",
+      title: "Beranda",
+    },
+    {
+      icon: "Album",
+      pathname: "/data-vendor",
+      title: "Data Vendor",
+    },
+    {
+      icon: "MonitorDot",
+      pathname: "/monitoring-pengadaan",
+      title: "Monitoring Pengadaan",
+    },
+    {
+      icon: "FlameKindling",
+      pathname: "/lelang",
+      title: "Lelang",
+      subMenu: [
+        {
+          icon: "FileText",
+          pathname: "/lelang/daftar-lelang",
+          title: "Daftar Lelang",
+        },
+        {
+          icon: "FileText",
+          pathname: "/lelang/masa-sanggah",
+          title: "Masa Sanggah",
+        },
+        {
+          icon: "FileText",
+          pathname: "/lelang/pengumuman",
+          title: "Pengumuman",
+        },
+        {
+          icon: "FileText",
+          pathname: "/lelang/penagihan",
+          title: "Penagihan",
+        },
+      ],
+    },
+    {
+      icon: "MonitorOff",
+      pathname: "/daftar-hitam",
+      title: "Daftar Hitam",
+    },
+    {
+      icon: "MonitorCheck",
+      pathname: "/monitoring-progress-pekerjaan",
+      title: "Progress Pekerjaan",
+    },
+    {
+      icon: "Settings2",
+      pathname: "/pengaturan",
+      title: "Pengaturan",
+      subMenu: [
+        {
+          icon: "ShieldCheck",
+          pathname: "/pengaturan/log",
+          title: "Log Activity",
+        },
+        {
+          icon: "ActivitySquare",
+          pathname: "/pengaturan/other",
+          title: "Other Settings",
+        },
+      ],
+    },
   ],
 };
 

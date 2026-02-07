@@ -58,9 +58,9 @@ function Main() {
               </div>
               <div className="ml-4">
                 <div className="-mt-0.5 text-lg font-medium text-primary">
-                  Permohonan
+                  Vendor
                 </div>
-                <div className="mt-0.5 text-slate-500">Data Permohonan</div>
+                <div className="mt-0.5 text-slate-500">Data Vendor</div>
               </div>
             </div>
             <div className="px-4 py-2.5 mt-16 border border-dashed rounded-[0.6rem] border-slate-300/80 box shadow-sm">
@@ -79,9 +79,9 @@ function Main() {
               </div>
               <div className="ml-4">
                 <div className="-mt-0.5 text-lg font-medium text-success">
-                  Ahli
+                  Lelang
                 </div>
-                <div className="mt-0.5 text-slate-500">Data Ahli</div>
+                <div className="mt-0.5 text-slate-500">Data Lelang</div>
               </div>
             </div>
             <div className="px-4 py-2.5 mt-16 border border-dashed rounded-[0.6rem] border-slate-300/80 box shadow-sm">
@@ -103,9 +103,9 @@ function Main() {
               </div>
               <div className="ml-4">
                 <div className="-mt-0.5 text-lg font-medium text-warning">
-                  Memiliki Tugas
+                 Lelang Tender
                 </div>
-                <div className="mt-0.5 text-slate-500">Ahli Memiliki Tugas</div>
+                <div className="mt-0.5 text-slate-500">Lelang Tender</div>
               </div>
             </div>
             <div className="px-4 py-2.5 mt-16 border border-dashed rounded-[0.6rem] border-slate-300/80 box shadow-sm">
@@ -127,10 +127,10 @@ function Main() {
               </div>
               <div className="ml-4">
                 <div className="-mt-0.5 text-lg font-medium text-danger">
-                  Tidak Memiliki Tugas
+                  Lelang Non Tender
                 </div>
                 <div className="mt-0.5 text-slate-500">
-                  Ahli Tidak Memiliki Tugas
+                 Non Tender
                 </div>
               </div>
             </div>
@@ -146,7 +146,7 @@ function Main() {
       <div className="col-span-12 xl:col-span-8">
         <div>
           <div className="flex flex-col md:h-10 gap-y-3 md:items-center md:flex-row">
-            <div className="text-base font-medium">Laporan Ahli</div>
+            <div className="text-base font-medium">Laporan Lelang</div>
           </div>
           <div className="p-5 mt-3.5 box box--stacked">
             <div className="flex flex-col lg:items-center lg:flex-row gap-y-5">
@@ -215,11 +215,11 @@ function Main() {
             <div className="flex flex-wrap items-center justify-center mt-5 gap-y-3 gap-x-5">
               <div className="flex items-center text-slate-500">
                 <div className="w-2 h-2 mr-2 border rounded-full border-primary/60 bg-primary/60"></div>{" "}
-                Ahli Memiliki Tugas
+                Tender
               </div>
               <div className="flex items-center text-slate-500">
                 <div className="w-2 h-2 mr-2 border rounded-full border-slate-500/60 bg-slate-500/60"></div>{" "}
-                Ahli Tidak Memiliki Tugas
+                Non Tender
               </div>
             </div>
           </div>
@@ -228,7 +228,7 @@ function Main() {
       <div className="col-span-12 md:col-span-6 xl:col-span-4">
         <div>
           <div className="flex flex-col md:h-10 gap-y-3 md:items-center md:flex-row">
-            <div className="text-base font-medium">Data Permohonan</div>
+            <div className="text-base font-medium">Data Lelang</div>
           </div>
           <div className="p-5 mt-3.5 box box--stacked">
             <Tab.Group className="mt-1">
@@ -269,7 +269,7 @@ function Main() {
                   <div className="flex flex-wrap items-center justify-center mt-4 gap-y-3 gap-x-5">
                     <div className="flex items-center text-slate-500">
                       <div className="w-2 h-2 mr-2 border rounded-full border-warning/20 bg-warning/20"></div>{" "}
-                      Permohonan
+                      Lelang
                     </div>
                   </div>
                   <Button className="w-full mt-6 border-dashed border-slate-300 hover:bg-slate-50 dark:hover:bg-darkmode-400">

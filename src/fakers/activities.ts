@@ -29,262 +29,122 @@ const fakers = {
     const activities: Activity[] = [
       {
         date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
+          .unix(_.random(1700000000, 1730000000))
           .format("DD MMMM YYYY"),
-        activity: "Uploaded documents",
-        activityDetails: "Uploaded important project documents",
-        uploadedFiles: [
-          {
-            filename: "document1.pdf",
-            size: "2.5MB",
-            fileType: "PDF",
-          },
-          {
-            filename: "document2.docx",
-            size: "1.8MB",
-            fileType: "DOCX",
-          },
-        ],
-        statusBadge: "Completed",
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Logged in successfully",
-        activityDetails: "Accessed the dashboard",
-        statusBadge: "Success",
-        images: [
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-        ],
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Uploaded a spreadsheet",
-        activityDetails: "Added financial data for Q3",
-        uploadedFiles: [
-          {
-            filename: "spreadsheet.xlsx",
-            size: "3.4MB",
-            fileType: "XLSX",
-          },
-        ],
-        statusBadge: "Completed",
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Updated profile picture",
-        activityDetails: "Changed profile photo",
-        statusBadge: "Success",
-        images: [
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-        ],
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Uploaded code files",
-        activityDetails: "Added new code modules",
-        uploadedFiles: [
-          {
-            filename: "code1.js",
-            size: "300KB",
-            fileType: "JavaScript",
-          },
-          {
-            filename: "code2.py",
-            size: "450KB",
-            fileType: "Python",
-          },
-        ],
-        statusBadge: "Completed",
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Received 5 new emails",
-        activityDetails: "Inbox updates",
-        uploadedFiles: [
-          {
-            filename: "presentation1.pptx",
-            size: "5.2MB",
-            fileType: "PPTX",
-          },
-          {
-            filename: "presentation2.ppt",
-            size: "4.5MB",
-            fileType: "PPT",
-          },
-        ],
+        activity: "Viewed Monitoring Pengadaan",
+        activityDetails: "Membuka dashboard Monitoring Pengadaan (2024)",
         statusBadge: "Info",
       },
       {
         date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
+          .unix(_.random(1700000000, 1730000000))
           .format("DD MMMM YYYY"),
-        activity: "Uploaded video files",
-        activityDetails: "Shared video tutorials",
+        activity: "Exported Procurement Data",
+        activityDetails: "Exported CSV dari Monitoring Pengadaan untuk tahun 2024",
         uploadedFiles: [
           {
-            filename: "video1.mp4",
-            size: "15MB",
-            fileType: "MP4",
-          },
-          {
-            filename: "video2.mov",
-            size: "12.5MB",
-            fileType: "MOV",
+            filename: "monitoring_pengadaan_2024.csv",
+            size: "1.2MB",
+            fileType: "CSV",
           },
         ],
         statusBadge: "Completed",
       },
       {
         date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
+          .unix(_.random(1700000000, 1730000000))
           .format("DD MMMM YYYY"),
-        activity: "Task completed: Review Project Proposal",
-        activityDetails: "Reviewed and provided feedback",
-        statusBadge: "Completed",
-        images: [
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-        ],
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Uploaded images",
-        activityDetails: "Added project screenshots",
-        images: [
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-        ],
-        statusBadge: "Completed",
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Posted a status update",
-        activityDetails: "Shared thoughts on the project",
+        activity: "Opened Lelang - Daftar Lelang",
+        activityDetails: "Melihat detail lelang PKT-001 (Pembangunan Jalan)",
         statusBadge: "Success",
       },
       {
         date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
+          .unix(_.random(1700000000, 1730000000))
           .format("DD MMMM YYYY"),
-        activity: "Uploaded presentations",
-        activityDetails: "Added slides for the team meeting",
+        activity: "Submitted Bid",
+        activityDetails: "PT Vendor 3 mengajukan penawaran untuk PKT-002",
         uploadedFiles: [
-          {
-            filename: "presentation1.pptx",
-            size: "5.2MB",
-            fileType: "PPTX",
-          },
-          {
-            filename: "presentation2.ppt",
-            size: "4.5MB",
-            fileType: "PPT",
-          },
-        ],
-        statusBadge: "Completed",
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Logged out",
-        activityDetails: "Signed out from the dashboard",
-        statusBadge: "Info",
-        images: [
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-        ],
-      },
-      {
-        date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
-          .format("DD MMMM YYYY"),
-        activity: "Received a friend request",
-        activityDetails: "Friend request from John",
-        images: [
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
-          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]]
-            .default,
+          { filename: "penawaran_pkt002.pdf", size: "2.1MB", fileType: "PDF" },
         ],
         statusBadge: "New",
       },
       {
         date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
+          .unix(_.random(1700000000, 1730000000))
           .format("DD MMMM YYYY"),
-        activity: "Added a new contact",
-        activityDetails: "Added a new contact, Sarah",
-        uploadedFiles: [
-          {
-            filename: "spreadsheet.xlsx",
-            size: "3.4MB",
-            fileType: "XLSX",
-          },
-        ],
+        activity: "Added Vendor",
+        activityDetails: "Menambahkan Data Master Vendor: PT. Nusantara Konstruksi",
+        statusBadge: "Completed",
+      },
+      {
+        date: dayjs
+          .unix(_.random(1700000000, 1730000000))
+          .format("DD MMMM YYYY"),
+        activity: "Viewed Progress Pekerjaan",
+        activityDetails: "Memeriksa progress paket PKT-003 oleh vendor PT Vendor 1",
+        statusBadge: "Info",
+      },
+      {
+        date: dayjs
+          .unix(_.random(1700000000, 1730000000))
+          .format("DD MMMM YYYY"),
+        activity: "Updated Vendor Profile",
+        activityDetails: "Memperbarui alamat dan kontak PT. Nusantara Konstruksi",
         statusBadge: "Success",
       },
       {
         date: dayjs
-          .unix(_.random(1586584776897, 1672333200000) / 1000)
+          .unix(_.random(1700000000, 1730000000))
           .format("DD MMMM YYYY"),
-        activity: "Uploaded audio recordings",
-        activityDetails: "Recorded podcast episodes",
+        activity: "Generated Report - Progress Pekerjaan",
+        activityDetails: "Membuat laporan progress per paket untuk satker Dinas Pekerjaan Umum",
         uploadedFiles: [
-          {
-            filename: "audio1.mp3",
-            size: "4.8MB",
-            fileType: "MP3",
-          },
-          {
-            filename: "audio2.wav",
-            size: "6.2MB",
-            fileType: "WAV",
-          },
+          { filename: "report_progress_apr2024.pdf", size: "850KB", fileType: "PDF" },
         ],
         statusBadge: "Completed",
+      },
+      {
+        date: dayjs
+          .unix(_.random(1700000000, 1730000000))
+          .format("DD MMMM YYYY"),
+        activity: "Changed Settings",
+        activityDetails: "Mengupdate pengaturan Log Activity (mode notifikasi)",
+        statusBadge: "Success",
+      },
+      {
+        date: dayjs
+          .unix(_.random(1700000000, 1730000000))
+          .format("DD MMMM YYYY"),
+        activity: "Uploaded Documents for Package",
+        activityDetails: "Mengunggah dokumen kontrak untuk PKT-001",
+        uploadedFiles: [
+          { filename: "kontrak_pkt001_signed.pdf", size: "1.4MB", fileType: "PDF" },
+        ],
+        statusBadge: "Completed",
+        images: [
+          imageAssets[filteredImages[_.random(0, filteredImages.length - 1)]].default,
+        ],
+      },
+      {
+        date: dayjs
+          .unix(_.random(1700000000, 1730000000))
+          .format("DD MMMM YYYY"),
+        activity: "User Login",
+        activityDetails: "User admin logged in ke sistem",
+        statusBadge: "Success",
+      },
+      {
+        date: dayjs
+          .unix(_.random(1700000000, 1730000000))
+          .format("DD MMMM YYYY"),
+        activity: "Viewed Daftar Hitam",
+        activityDetails: "Melihat daftar perusahaan yang masuk blacklist",
+        statusBadge: "Info",
       },
     ];
 
     return _.shuffle(activities);
   },
 };
-
 export default fakers;

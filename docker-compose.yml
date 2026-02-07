@@ -5,5 +5,5 @@ services:
       dockerfile: Dockerfile
     container_name: acquiras
     ports:
-      - "49410:80"
+      - "49400:80"
     restart: unless-stopped
