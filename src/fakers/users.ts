@@ -4,6 +4,8 @@ export interface User {
   id: number;
   userid: string;
   email: string;
+  photo: string;
+  name: string;
   type: string;
   cabang: boolean;
   npwpid: number;
@@ -11,12 +13,19 @@ export interface User {
   datejoined: Date;
 }
 
+const imageAssets = import.meta.glob<{
+  default: string;
+}>("/src/assets/images/users/*.{jpg,jpeg,png,svg}", { eager: true });
+
+
 const fakers = {
   fakeUsers() {
     const users: Array<User> = [
       {
         id: 1,
         userid: "tomhanks",
+        photo: imageAssets["/src/assets/images/users/user1-50x50.jpg"].default,
+        name: "Tom Hanks",
         email: "tom.hanks@left4code.com",
         type: "BUMN",
         cabang: true,
@@ -28,6 +37,8 @@ const fakers = {
         id: 2,
         userid: "merylstreep",
         email: "meryl.streep@left4code.com",
+        photo: imageAssets["/src/assets/images/users/user1-50x50.jpg"].default,
+        name: "Meryl Streep",
         type: "Persekutuan Komanditer (CV / Commanditer Venoschaap )",
         cabang: false,
         npwpid: 2345678901,
@@ -38,6 +49,8 @@ const fakers = {
         id: 3,
         userid: "leonardodicaprio",
         email: "leonardo.dicaprio@left4code.com",
+        photo: imageAssets["/src/assets/images/users/user1-50x50.jpg"].default,
+        name: "Leonardo DiCaprio",
         type: "Persekutuan Komanditer (CV / Commanditer Venoschaap )",
         cabang: false,
         npwpid: 3456789012,
