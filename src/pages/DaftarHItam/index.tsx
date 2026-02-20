@@ -18,7 +18,7 @@ function Main() {
       <div className="col-span-12">
         <Tab.Group>
           <div className="flex flex-col md:h-10 gap-y-3 md:items-center md:flex-row">
-            <div className="text-base font-medium group-[.mode--light]:text-white">
+            <div className="text-base font-medium text-white">
               Daftar Hitam
             </div>
             <div className="flex flex-col sm:flex-row gap-x-3 gap-y-2 md:ml-auto">

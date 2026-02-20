@@ -17,8 +17,8 @@ function Main() {
       <div className="col-span-12">
         <div className="flex items-start justify-between">
           <div>
-            <div className="text-base font-medium group-[.mode--light]:text-white">Profil Pengadaan Monitoring</div>
-            <div className="text-base font-medium group-[.mode--light]:text-white">Live Monitoring Dashboard</div>
+            <div className="text-base font-medium text-white">Profil Pengadaan Monitoring</div>
+            <div className="text-base font-medium text-white">Live Monitoring Dashboard</div>
           </div>
         </div>
 

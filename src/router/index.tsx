@@ -40,11 +40,32 @@ import Log from "../pages/Pengaturan/log-activity";
 import ProtectedRoute from "@/components/Protected";
 
 import Layout from "../themes";
+import GuestLayout from "../themes/GuestLayout";
+import GuestBeranda from "../pages/Guest/Beranda";
+import GuestDaftarLelang from "../pages/Guest/DaftarLelang";
+import GuestDaftarHitam from "../pages/Guest/DaftarHitam";
+import GuestMonitoringPengadaan from "../pages/Guest/MonitoringPengadaan";
+import path from "path";
+import Login from "../pages/Login";
 
 function Router() {
   const routes = [
     {
       path: "/",
+      element: <GuestLayout />,
+      children: [
+        { path: "", element: <GuestBeranda /> },
+        { path: "daftar-lelang", element: <GuestDaftarLelang /> },
+        { path: "daftar-hitam", element: <GuestDaftarHitam /> },
+        { path: "monitoring-pengadaan", element: <GuestMonitoringPengadaan /> },
+      ],
+    },
+    {
+      path: "/login",
+      element: <Login />,
+    },
+    {
+      path: "/dashboard",
       element: <Layout />,
       // element: (
       //   <ProtectedRoute>
@@ -53,11 +74,11 @@ function Router() {
       // ),
       children: [
         {
-          path: "/",
+          path: "",
           element: <Dashboard />,
         },
         {
-          path: "/master-data/master-akun",
+          path: "master-data/master-akun",
           element: <Akun />,
         },
         // {
@@ -69,115 +90,115 @@ function Router() {
         //   element: <EditMasterPermohonan />,
         // },
         {
-          path: "/master-data/master-vendor",
+          path: "master-data/master-vendor",
           element: <Vendor />,
         },
         {
-          path: "/data-vendor",
+          path: "data-vendor",
           element: <DataVendor />,
         },
         {
-          path: "/master-lelang/add",
+          path: "master-lelang/add",
           element: <AddLelang />,
         },
         {
-          path: "/master-lelang/edit/:id",
+          path: "master-lelang/edit/:id",
           element: <EditLelang />,
         },
         {
-          path: "/master-lelang/:id",
+          path: "master-lelang/:id",
           element: <ShowDetailLelang />,
         },
         {
-          path: "/lelang/show/:id",
+          path: "lelang/show/:id",
           element: <ShowLelangVendor />,
         },
         {
-          path: "/lelang/masa-sanggah/:id",
+          path: "lelang/masa-sanggah/:id",
           element: <MasaSanggahAction />,
         },
         {
-          path: "/master-lelang/show/:id",
+          path: "master-lelang/show/:id",
           element: <ShowDetailLelang />,
         },
         {
-          path: "/pemohon/add",
+          path: "pemohon/add",
           element: <AddPemohon />,
         },
         // {
-        //   path: "/pemohon/edit/:id",
+        //   path: "pemohon/edit/:id",
         //   element: <EditPemohon />,
         // },
         {
-          path: "/monitoring-pengadaan",
+          path: "monitoring-pengadaan",
           element: <MonitoringPengadaan />,
         },
         {
-          path: "/daftar-hitam",
+          path: "daftar-hitam",
           element: <DaftarHitam />,
         },
         {
-          path: "/monitoring-progress-pekerjaan",
+          path: "monitoring-progress-pekerjaan",
           element: <ProgressPekerjaan />,
         },
         {
-          path: "/ahli/add",
+          path: "ahli/add",
           element: <AddAhli />,
         },
         {
-          path: "/ahli/edit/:id",
+          path: "ahli/edit/:id",
           element: <EditAhli />,
         },
         {
-          path: "/master-lelang",
+          path: "master-lelang",
           element: <Lelang />,
         },
         {
-          path: "/lelang/daftar-lelang",
+          path: "lelang/daftar-lelang",
           element: <DaftarLelang />,
         },
         {
-          path: "/lelang/masa-sanggah",
+          path: "lelang/masa-sanggah",
           element: <MasaSanggah />,
         },
         {
-          path: "/lelang/masa-sanggah/:id",
+          path: "lelang/masa-sanggah/:id",
           element: <MasaSanggahAction />,
         },
         {
-          path: "/lelang/penagihan/:id",
+          path: "lelang/penagihan/:id",
           element: <PenagihanAction />,
         },
         {
-          path: "/lelang/pengumuman",
+          path: "lelang/pengumuman",
           element: <Pengumuman />,
         },
         {
-          path: "/lelang/penagihan",
+          path: "lelang/penagihan",
           element: <Penagihan />,
         },
         {
-          path: "/penilaian/add",
+          path: "penilaian/add",
           element: <AddPenilaian />,
         },
         {
-          path: "/penilaian/edit/:id",
+          path: "penilaian/edit/:id",
           element: <EditPenilaian />,
         },
         {
-          path: "/penilaian/setting",
+          path: "penilaian/setting",
           element: <SettingPenilaian />,
         },
         {
-          path: "/pengaturan/other",
+          path: "pengaturan/other",
           element: <Pengaturan />,
         },
         {
-          path: "/pengaturan/log",
+          path: "pengaturan/log",
           element: <Log />,
         },
         {
-          path: "/profile",
+          path: "profile",
           element: <Profile />,
         },
       ],

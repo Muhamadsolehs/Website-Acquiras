@@ -101,6 +101,9 @@ interface IdentitasTabProps {
   company: CompanyIdentity;
 }
 
+const inputClass =
+  "mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 dark:border-darkmode-400 dark:bg-darkmode-800 dark:text-slate-100";
+
 const IdentitasTab: React.FC<IdentitasTabProps> = ({ company }) => (
   <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -108,61 +111,101 @@ const IdentitasTab: React.FC<IdentitasTabProps> = ({ company }) => (
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Nama Perusahaan
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.name}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.name}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           ID Vendor
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.idvendor}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={String(company.idvendor)}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Alamat
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.address}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.address}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Kode Pos
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.postalcode}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.postalcode}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Provinsi
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.province}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.province}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Kabupaten
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.regency}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.regency}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Telepon
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.phone}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.phone}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Fax
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.noFax}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.noFax}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Website
         </label>
-        <p className="mt-1 text-blue-600 dark:text-blue-400">{company.website}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.website}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Kualifikasi
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{company.qualified}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={company.qualified}
+        />
       </div>
     </div>
   </div>
@@ -179,45 +222,61 @@ const IzinUsahaTab: React.FC<IzinUsahaTabProps> = ({ permission }) => (
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Jenis Izin Usaha
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">
-          {permission.typeBusiness}
-        </p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={permission.typeBusiness}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Nomor Surat
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{permission.noLetter}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={permission.noLetter}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Diberikan Oleh
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{permission.givenBy}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={permission.givenBy}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Klasifikasi
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">
-          {permission.clasfication}
-        </p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={permission.clasfication}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Berlaku Hingga
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">
-          {new Date(permission.validUntil).toLocaleDateString("id-ID")}
-        </p>
+        <input
+          type="date"
+          className={inputClass}
+          defaultValue={new Date(permission.validUntil).toISOString().slice(0, 10)}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Sumber Data
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">
-          {permission.sourceData}
-        </p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={permission.sourceData}
+        />
       </div>
     </div>
   </div>
@@ -234,21 +293,31 @@ const AktaTab: React.FC<AktaTabProps> = ({ akta }) => (
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Nomor Akta
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{akta.nomor}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={akta.nomor}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Tanggal Surat
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">
-          {new Date(akta.dateLetter).toLocaleDateString("id-ID")}
-        </p>
+        <input
+          type="date"
+          className={inputClass}
+          defaultValue={new Date(akta.dateLetter).toISOString().slice(0, 10)}
+        />
       </div>
       <div>
         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           Notaris
         </label>
-        <p className="mt-1 text-gray-900 dark:text-white">{akta.notaris}</p>
+        <input
+          type="text"
+          className={inputClass}
+          defaultValue={akta.notaris}
+        />
       </div>
     </div>
   </div>
@@ -308,76 +377,42 @@ const ManajerialTab: React.FC<ManajerialTabProps> = ({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Nama
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.name}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nama</label>
+                  <input type="text" className={inputClass} defaultValue={owner.name} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Kewarganegaraan
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.citizenship}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kewarganegaraan</label>
+                  <input type="text" className={inputClass} defaultValue={owner.citizenship} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    No. KTP
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.noKtp}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. KTP</label>
+                  <input type="text" className={inputClass} defaultValue={owner.noKtp} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    No. NPWP
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.noNpwp}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. NPWP</label>
+                  <input type="text" className={inputClass} defaultValue={owner.noNpwp} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Alamat
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.address}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Alamat</label>
+                  <input type="text" className={inputClass} defaultValue={owner.address} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Provinsi
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.province}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Provinsi</label>
+                  <input type="text" className={inputClass} defaultValue={owner.province} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Kabupaten
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.regency}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kabupaten</label>
+                  <input type="text" className={inputClass} defaultValue={owner.regency} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Saham (%)
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {owner.saham}%
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Saham (%)</label>
+                  <input type="number" className={inputClass} defaultValue={owner.saham} />
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-gray-600 dark:text-gray-400">
-            Tidak ada data pemilik
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Tidak ada data pemilik</p>
         )}
       </div>
     )}
@@ -396,116 +431,68 @@ const ManajerialTab: React.FC<ManajerialTabProps> = ({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Nama
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.name}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nama</label>
+                  <input type="text" className={inputClass} defaultValue={management.name} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Posisi
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.position}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Posisi</label>
+                  <input type="text" className={inputClass} defaultValue={management.position} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Kewarganegaraan
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.citizenship}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kewarganegaraan</label>
+                  <input type="text" className={inputClass} defaultValue={management.citizenship} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    NIK/Paspor
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.nik_pasport}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">NIK/Paspor</label>
+                  <input type="text" className={inputClass} defaultValue={management.nik_pasport} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    No. NPWP
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.noNpwp}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. NPWP</label>
+                  <input type="text" className={inputClass} defaultValue={management.noNpwp} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    No. BPJS Kesehatan
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.noBpjskesehatan}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. BPJS Kesehatan</label>
+                  <input type="text" className={inputClass} defaultValue={management.noBpjskesehatan} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    No. BPJS Ketenagakerjaan
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.noBpjsketenagan}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. BPJS Ketenagakerjaan</label>
+                  <input type="text" className={inputClass} defaultValue={management.noBpjsketenagan} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Alamat
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.address}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Alamat</label>
+                  <input type="text" className={inputClass} defaultValue={management.address} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Provinsi
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.province}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Provinsi</label>
+                  <input type="text" className={inputClass} defaultValue={management.province} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Kabupaten
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {management.regency}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kabupaten</label>
+                  <input type="text" className={inputClass} defaultValue={management.regency} />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Sejak
-                  </label>
-                  <p className="mt-1 text-gray-900 dark:text-white">
-                    {new Date(management.since).toLocaleDateString("id-ID")}
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sejak</label>
+                  <input
+                    type="date"
+                    className={inputClass}
+                    defaultValue={new Date(management.since).toISOString().slice(0, 10)}
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Status
-                  </label>
-                  <p className="mt-1">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        management.status
-                          ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                          : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
-                      }`}
-                    >
-                      {management.status ? "Aktif" : "Tidak Aktif"}
-                    </span>
-                  </p>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
+                  <select
+                    className={inputClass}
+                    defaultValue={management.status ? "1" : "0"}
+                  >
+                    <option value="1">Aktif</option>
+                    <option value="0">Tidak Aktif</option>
+                  </select>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-gray-600 dark:text-gray-400">
-            Tidak ada data kepengurusan
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Tidak ada data kepengurusan</p>
         )}
       </div>
     )}
@@ -529,130 +516,68 @@ const SDMTab: React.FC<SDMTabProps> = ({ teams }) => (
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Nama
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">{team.name}</p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nama</label>
+              <input type="text" className={inputClass} defaultValue={team.name} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Profesi
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.profession}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Profesi</label>
+              <input type="text" className={inputClass} defaultValue={team.profession} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Posisi
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.position}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Posisi</label>
+              <input type="text" className={inputClass} defaultValue={team.position} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Tempat Lahir
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.placeBirth}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tempat Lahir</label>
+              <input type="text" className={inputClass} defaultValue={team.placeBirth} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Tanggal Lahir
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {new Date(team.dateBirth).toLocaleDateString("id-ID")}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tanggal Lahir</label>
+              <input type="date" className={inputClass} defaultValue={new Date(team.dateBirth).toISOString().slice(0, 10)} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Jenis Kelamin
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.gender}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Jenis Kelamin</label>
+              <input type="text" className={inputClass} defaultValue={team.gender} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Kewarganegaraan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.citizenship}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kewarganegaraan</label>
+              <input type="text" className={inputClass} defaultValue={team.citizenship} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                NIK/Paspor
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.nik_pasport}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">NIK/Paspor</label>
+              <input type="text" className={inputClass} defaultValue={team.nik_pasport} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                No. NPWP
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.noNpwp}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. NPWP</label>
+              <input type="text" className={inputClass} defaultValue={team.noNpwp} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                No. BPJS Kesehatan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.noBpjskesehatan}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. BPJS Kesehatan</label>
+              <input type="text" className={inputClass} defaultValue={team.noBpjskesehatan} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                No. BPJS Ketenagakerjaan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.noBpjsketenagan}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. BPJS Ketenagakerjaan</label>
+              <input type="text" className={inputClass} defaultValue={team.noBpjsketenagan} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Email
-              </label>
-              <p className="mt-1 text-blue-600 dark:text-blue-400">
-                {team.email}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Email</label>
+              <input type="email" className={inputClass} defaultValue={team.email} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Telepon
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.phone}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Telepon</label>
+              <input type="text" className={inputClass} defaultValue={team.phone} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Pendidikan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.education}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Pendidikan</label>
+              <input type="text" className={inputClass} defaultValue={team.education} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Pengalaman
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.experience}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Pengalaman</label>
+              <input type="text" className={inputClass} defaultValue={team.experience} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Alamat
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {team.address}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Alamat</label>
+              <input type="text" className={inputClass} defaultValue={team.address} />
             </div>
           </div>
         </div>
@@ -680,124 +605,66 @@ const PengalamanTab: React.FC<PengalamanTabProps> = ({ experiences }) => (
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Nama Kontrak
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.nameContract}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nama Kontrak</label>
+              <input type="text" className={inputClass} defaultValue={exp.nameContract} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Jenis Pekerjaan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.typeWork}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Jenis Pekerjaan</label>
+              <input type="text" className={inputClass} defaultValue={exp.typeWork} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Lokasi Pekerjaan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.locationWork}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Lokasi Pekerjaan</label>
+              <input type="text" className={inputClass} defaultValue={exp.locationWork} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Instansi
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.instance}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Instansi</label>
+              <input type="text" className={inputClass} defaultValue={exp.instance} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Unit Pekerjaan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.unitWork}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Unit Pekerjaan</label>
+              <input type="text" className={inputClass} defaultValue={exp.unitWork} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Telepon Instansi
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.phoneInstance}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Telepon Instansi</label>
+              <input type="text" className={inputClass} defaultValue={exp.phoneInstance} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                No. Kontrak
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.noContract}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">No. Kontrak</label>
+              <input type="text" className={inputClass} defaultValue={exp.noContract} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Nilai Kontrak
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                Rp {exp.valueContract.toLocaleString("id-ID")}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nilai Kontrak</label>
+              <input type="text" className={inputClass} defaultValue={`Rp ${exp.valueContract.toLocaleString("id-ID")}`} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Persentase Pekerjaan (%)
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.percentageWork}%
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Persentase Pekerjaan (%)</label>
+              <input type="number" className={inputClass} defaultValue={exp.percentageWork} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Tanggal Mulai
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {new Date(exp.dateWorkStart).toLocaleDateString("id-ID")}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tanggal Mulai</label>
+              <input type="date" className={inputClass} defaultValue={new Date(exp.dateWorkStart).toISOString().slice(0, 10)} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Tanggal Selesai
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {new Date(exp.dateWorkEnd).toLocaleDateString("id-ID")}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tanggal Selesai</label>
+              <input type="date" className={inputClass} defaultValue={new Date(exp.dateWorkEnd).toISOString().slice(0, 10)} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Tanggal Serah Terima
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {new Date(exp.dateHandover).toLocaleDateString("id-ID")}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tanggal Serah Terima</label>
+              <input type="date" className={inputClass} defaultValue={new Date(exp.dateHandover).toISOString().slice(0, 10)} />
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Ruang Lingkup Pekerjaan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.scopeWork}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ruang Lingkup Pekerjaan</label>
+              <input type="text" className={inputClass} defaultValue={exp.scopeWork} />
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Deskripsi Pekerjaan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {exp.descWork}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Deskripsi Pekerjaan</label>
+              <textarea className={inputClass} rows={3} defaultValue={exp.descWork} />
             </div>
           </div>
         </div>
       ))
     ) : (
-      <p className="text-gray-600 dark:text-gray-400">
-        Tidak ada data pengalaman
-      </p>
+      <p className="text-gray-600 dark:text-gray-400">Tidak ada data pengalaman</p>
     )}
   </div>
 );
@@ -819,92 +686,50 @@ const PeralatanTab: React.FC<PeralatanTabProps> = ({ workEquipments }) => (
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Nama Peralatan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.nameEquipment}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nama Peralatan</label>
+              <input type="text" className={inputClass} defaultValue={equipment.nameEquipment} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Jenis Peralatan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.typeEquipment}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Jenis Peralatan</label>
+              <input type="text" className={inputClass} defaultValue={equipment.typeEquipment} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Kuantitas
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.quantity}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kuantitas</label>
+              <input type="text" className={inputClass} defaultValue={String(equipment.quantity)} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Kapasitas
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.capacity}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kapasitas</label>
+              <input type="text" className={inputClass} defaultValue={equipment.capacity} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Tahun Pembuatan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.yearMade}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tahun Pembuatan</label>
+              <input type="text" className={inputClass} defaultValue={equipment.yearMade} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Kondisi
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.condition}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kondisi</label>
+              <input type="text" className={inputClass} defaultValue={equipment.condition} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Lokasi
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.location}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Lokasi</label>
+              <input type="text" className={inputClass} defaultValue={equipment.location} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Kepemilikan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.ownership}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Kepemilikan</label>
+              <input type="text" className={inputClass} defaultValue={equipment.ownership} />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Bukti Kepemilikan
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.proofOwnership}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Bukti Kepemilikan</label>
+              <input type="text" className={inputClass} defaultValue={equipment.proofOwnership} />
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Informasi
-              </label>
-              <p className="mt-1 text-gray-900 dark:text-white">
-                {equipment.information}
-              </p>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Informasi</label>
+              <textarea className={inputClass} rows={3} defaultValue={equipment.information} />
             </div>
           </div>
         </div>
       ))
     ) : (
-      <p className="text-gray-600 dark:text-gray-400">
-        Tidak ada data peralatan
-      </p>
+      <p className="text-gray-600 dark:text-gray-400">Tidak ada data peralatan</p>
     )}
   </div>
 );

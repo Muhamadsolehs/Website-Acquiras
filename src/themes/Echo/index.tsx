@@ -21,13 +21,9 @@ import SwitchAccount from "@/components/SwitchAccount";
 import NotificationsPanel from "@/components/NotificationsPanel";
 import ActivitiesPanel from "@/components/ActivitiesPanel";
 import logo from "@/assets/images/logo/acquiras.png";
-import useLogout from "@/hooks/useLogout";
 import profile from "@/assets/images/avatar/person_1.png";
 
-
 function Main() {
-  const LOGIN_SITE = import.meta.env.VITE_URL_BACK || "http://localhost:3000";
-  const { logout } = useLogout();
   const dispatch = useAppDispatch();
   const compactMenu = useAppSelector(selectCompactMenu);
   const setCompactMenu = (val: boolean) => {
@@ -88,6 +84,32 @@ function Main() {
       setTopBarActive(true);
     } else {
       setTopBarActive(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const apiUrl =
+        import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+      const token = localStorage.getItem("eproc_token");
+
+      await fetch(`${apiUrl}/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.removeItem("eproc_token");
+      localStorage.removeItem("eproc_user");
+      localStorage.removeItem("eproc_user_role");
+      localStorage.removeItem("theme");
+
+      navigate("/login");
     }
   };
 
@@ -175,8 +197,7 @@ function Main() {
               <Lucide icon="ArrowLeft" className="w-3.5 h-3.5 stroke-[1.3]" />
             </a>
           </div>
-          <div
-            className="flex items-start justify-start w-full px-4 border-t border-slate-200/60 dark:border-darkmode-400">
+          <div className="flex items-start justify-start w-full px-4 border-t border-slate-200/60 dark:border-darkmode-400">
             {/* <a href={`${LOGIN_SITE}/select-app`}
               className="flex items-center justify-center p-1.5 mt-2 rounded-xl border border-theme-2 text-theme-2">
               <Lucide icon="ArrowLeftCircle" className="w-3.5 h-3.5 stroke-[1.3] me-2" />
@@ -193,7 +214,7 @@ function Main() {
             <ul className="scrollable">
               <li className="mt-2 mb-3 border-b border-slate-200/60 dark:border-darkmode-400">
                 <a
-                  href={`${LOGIN_SITE}/select-app`}
+                  href=""
                   className={clsx([
                     "side-menu__link group hover:bg-theme-1/10 hover:text-theme-2 transition-colors",
                   ])}
@@ -209,8 +230,7 @@ function Main() {
                         ? "opacity-0 w-0 overflow-hidden"
                         : "opacity-100 w-auto ml-2",
                     ])}
-                  >
-                  </div>
+                  ></div>
                   Kembali Pilih Aplikasi
                 </a>
               </li>
@@ -341,7 +361,7 @@ function Main() {
                                               },
                                             ])}
                                             onClick={(
-                                              event: React.MouseEvent
+                                              event: React.MouseEvent,
                                             ) => {
                                               event.preventDefault();
                                               linkTo(lastSubMenu, navigate);
@@ -364,7 +384,7 @@ function Main() {
                                             )}
                                           </a>
                                         </li>
-                                      )
+                                      ),
                                     )}
                                   </ul>
                                 </Transition>
@@ -377,7 +397,7 @@ function Main() {
                     )}
                     {/* END: Second Child */}
                   </li>
-                )
+                ),
               )}
               {/* END: First Child */}
             </ul>
@@ -502,7 +522,7 @@ function Main() {
                       <Lucide icon="Users" className="w-4 h-4 mr-2" />
                       Profil
                     </Menu.Item>
-                    <Menu.Item onClick={logout}>
+                    <Menu.Item onClick={handleLogout}>
                       <Lucide icon="Power" className="w-4 h-4 mr-2" />
                       Keluar
                     </Menu.Item>

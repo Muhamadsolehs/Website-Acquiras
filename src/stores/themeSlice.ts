@@ -1,12 +1,11 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 import Echo from "../themes/Echo";
+import EchoNavbar from "../themes/EchoNavbar";
 
 export const themes = [
-  {
-    name: "echo",
-    component: Echo,
-  },
+  { name: "echo", component: Echo },
+  { name: "echo-navbar", component: EchoNavbar },
 ] as const;
 
 export type Themes = (typeof themes)[number];
@@ -43,9 +42,8 @@ export const { setTheme } = themeSlice.actions;
 
 export const selectTheme = (state: RootState) => {
   if (localStorage.getItem("theme") === null) {
-    localStorage.setItem("theme", "echo");
+    localStorage.setItem("theme", themes[0].name);
   }
-
   return state.theme.value;
 };
 

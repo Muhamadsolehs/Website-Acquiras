@@ -52,8 +52,8 @@ function Main() {
       <div className="col-span-12">
         <div className="flex items-start justify-between">
           <div>
-            <div className="text-base font-medium group-[.mode--light]:text-white">Progress Pekerjaan</div>
-            <div className="text-sm text-slate-500 group-[.mode--light]:text-slate-100 mt-1">Lihat progress pekerjaan setelah lelang (pemenang/vendor)</div>
+            <div className="text-base font-medium text-white">Progress Pekerjaan</div>
+            <div className="text-sm text-slate-500 text-slate-100 mt-1">Lihat progress pekerjaan setelah lelang (pemenang/vendor)</div>
           </div>
         </div>
 
