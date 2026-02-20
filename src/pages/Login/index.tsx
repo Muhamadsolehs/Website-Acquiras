@@ -13,6 +13,8 @@ import { co } from "@fullcalendar/core/internal-common";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setTheme } from "@/stores/themeSlice";
+import logo from "@/assets/images/logo/acquiras.png";
+
 
 function Main() {
   const location = useLocation();
@@ -130,14 +132,17 @@ function Main() {
           ])}
         >
           <div className="relative z-10 flex flex-col justify-center w-full h-full py-2 lg:py-32">
-            <div className="rounded-[0.8rem] w-[55px] h-[55px] border border-primary/30 flex items-center justify-center">
-              <div className="relative flex items-center justify-center w-[50px] rounded-[0.6rem] h-[50px] bg-gradient-to-b from-theme-1/90 to-theme-2/90 bg-white">
-                <div className="w-[26px] h-[26px] relative -rotate-45 [&_div]:bg-white">
-                  <div className="absolute w-[20%] left-0 inset-y-0 my-auto rounded-full opacity-50 h-[75%]"></div>
-                  <div className="absolute w-[20%] inset-0 m-auto h-[120%] rounded-full"></div>
-                  <div className="absolute w-[20%] right-0 inset-y-0 my-auto rounded-full opacity-50 h-[75%]"></div>
-                </div>
-              </div>
+            <div className="flex items-center justify-center w-[34px] rounded-lg h-[34px] border-theme-2 border">
+              {/* <div className="w-[16px] h-[16px] relative -rotate-45 [&_div]:bg-white">
+                  <div className="absolute w-[21%] left-0 inset-y-0 my-auto rounded-full opacity-50 h-[75%]"></div>
+                  <div className="absolute w-[21%] inset-0 m-auto h-[120%] rounded-full"></div>
+                  <div className="absolute w-[21%] right-0 inset-y-0 my-auto rounded-full opacity-50 h-[75%]"></div>
+                </div> */}
+              <img
+                src={logo}
+                alt="Acquiras"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="mt-10">
               <div className="text-2xl font-medium">Sign In</div>
