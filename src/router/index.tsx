@@ -37,7 +37,6 @@ import SettingPenilaian from "../pages/Penilaian/setting";
 import Profile from "../pages/Profile";
 import Pengaturan from "../pages/Pengaturan";
 import Log from "../pages/Pengaturan/log-activity";
-import ProtectedRoute from "@/components/Protected";
 
 import Layout from "../themes";
 import GuestLayout from "../themes/GuestLayout";
@@ -47,6 +46,8 @@ import GuestDaftarHitam from "../pages/Guest/DaftarHitam";
 import GuestMonitoringPengadaan from "../pages/Guest/MonitoringPengadaan";
 import path from "path";
 import Login from "../pages/Login";
+import GuestRoute from "./guestRoute";
+import ProtectedRoute from "./protectedRoute";
 
 function Router() {
   const routes = [
@@ -62,11 +63,19 @@ function Router() {
     },
     {
       path: "/login",
-      element: <Login />,
+      element: (
+        <GuestRoute>
+          <Login />
+        </GuestRoute>
+      ),
     },
     {
       path: "/dashboard",
-      element: <Layout />,
+      element: (
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      ),
       // element: (
       //   <ProtectedRoute>
       //     <Layout />
