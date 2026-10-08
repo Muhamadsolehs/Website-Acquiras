@@ -32,29 +32,30 @@ function Main() {
     fetchLelang();
   }, []);
 
-  const filteredData = lelangList.filter((item) => {
-    const jenis = (item.paket?.jenis_paket || "tender").toLowerCase();
-    const matchesJenis = jenis === jenisFilter;
+  const searchFilteredData = lelangList.filter((item) => {
     const s = search.toLowerCase();
-    const matchesSearch =
+    return (
       !s ||
       (item.no_lelang || "").toLowerCase().includes(s) ||
       (item.judul_lelang || "").toLowerCase().includes(s) ||
       (item.paket?.nama_paket || "").toLowerCase().includes(s) ||
-      (item.paket?.kode_paket || "").toLowerCase().includes(s);
-
-    return matchesJenis && matchesSearch;
+      (item.paket?.kode_paket || "").toLowerCase().includes(s)
+    );
   });
 
   const exportCSV = () => {
+    const dataToExport = searchFilteredData.filter((item) => {
+      const jenis = (item.paket?.jenis_paket || item.jenis_paket || "tender").toLowerCase();
+      return jenis === jenisFilter.toLowerCase();
+    });
     const headers = ["No Lelang", "Kode Paket", "Nama Paket", "Jenis", "Status", "Pagu (Rp)", "Tgl Mulai", "Tgl Selesai"];
-    const rows = filteredData.map((d) => [
+    const rows = dataToExport.map((d) => [
       `"${d.no_lelang || ""}"`,
       `"${d.paket?.kode_paket || ""}"`,
       `"${d.judul_lelang || d.paket?.nama_paket || ""}"`,
       `"${d.paket?.jenis_paket || "Tender"}"`,
       `"${d.status || ""}"`,
-      d.paket?.nilai_pagu_paket || 0,
+      d.paket?.nilai_pagu || d.paket?.nilai_pagu_paket || 0,
       `"${d.tanggal_mulai || ""}"`,
       `"${d.tanggal_selesai || ""}"`,
     ]);
@@ -122,7 +123,7 @@ function Main() {
                 </div>
               ) : (
                 <MainTable
-                  data={filteredData}
+                  data={searchFilteredData}
                   jenisFilter={jenisFilter}
                   onJenisFilterChange={setJenisFilter}
                 />

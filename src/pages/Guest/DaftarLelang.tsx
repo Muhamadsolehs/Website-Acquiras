@@ -25,18 +25,15 @@ function GuestDaftarLelang() {
     fetchLelang();
   }, []);
 
-  const filteredData = lelangList.filter((item) => {
-    const jenis = (item.paket?.jenis_paket || "tender").toLowerCase();
-    const matchesJenis = jenis === jenisFilter;
+  const searchFilteredData = lelangList.filter((item) => {
     const s = search.toLowerCase();
-    const matchesSearch =
+    return (
       !s ||
       (item.no_lelang || "").toLowerCase().includes(s) ||
       (item.judul_lelang || "").toLowerCase().includes(s) ||
       (item.paket?.nama_paket || "").toLowerCase().includes(s) ||
-      (item.paket?.kode_paket || "").toLowerCase().includes(s);
-
-    return matchesJenis && matchesSearch;
+      (item.paket?.kode_paket || "").toLowerCase().includes(s)
+    );
   });
 
   return (
@@ -74,7 +71,7 @@ function GuestDaftarLelang() {
           </div>
         ) : (
           <MainTableLelangVendor
-            data={filteredData}
+            data={searchFilteredData}
             jenisFilter={jenisFilter}
             onJenisFilterChange={setJenisFilter}
           />
