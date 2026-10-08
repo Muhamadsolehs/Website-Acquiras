@@ -1,419 +1,465 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Lucide from "@/components/Base/Lucide";
 import Table from "@/components/Base/Table";
-import { FormCheck } from "@/components/Base/Form";
 import Button from "@/components/Base/Button";
-import { Menu } from "@/components/Base/Headless";
-import Pagination from "@/components/Base/Pagination";
-import paketFakers, { Paket } from "@/fakers/paket";
-import companyFakers, { CompanyIdentity } from "@/fakers/company";
-import _ from "lodash";
+import { FormInput, FormTextarea } from "@/components/Base/Form";
+import { Dialog } from "@/components/Base/Headless";
+import api from "@/api/axiosinstance";
+import { toast } from "sonner";
 
-interface ShowDetailVendorProps {
-  lelangId?: number;
-}
-
-const ShowDetailVendor: React.FC<ShowDetailVendorProps> = ({ lelangId }) => {
+const ShowDetailVendor: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"pengumuman" | "peserta">("pengumuman");
-  
-  const paket = paketFakers.fakePaket()[0];
-  const vendors = companyFakers.fakeCompanyIdentities();
+  const [lelang, setLelang] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Modal Daftar/Ikuti Lelang
+  const [bidModalOpen, setBidModalOpen] = useState(false);
+  const [nilaiPenawaran, setNilaiPenawaran] = useState("");
+  const [fileDokumen, setFileDokumen] = useState("dokumen_penawaran_lengkap.pdf");
+  const [catatanPenawaran, setCatatanPenawaran] = useState("");
+
+  const fetchDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/lelang/${id}`);
+      setLelang(res.data);
+    } catch (err: any) {
+      toast.error("Gagal memuat detail lelang: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const rawUser = localStorage.getItem("eproc_user");
+    if (rawUser) {
+      try {
+        setCurrentUser(JSON.parse(rawUser));
+      } catch (e) {}
+    }
+    if (id) {
+      fetchDetail();
+    }
+  }, [id]);
+
+  const handleSubmitPenawaran = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nilaiPenawaran) {
+      toast.error("Mohon masukkan nilai penawaran harga");
+      return;
+    }
+
+    const vendorId = currentUser?.vendor?.id || 1; // Fallback to current vendor
+
+    try {
+      setSubmitting(true);
+      await api.post("/lelang-peserta", {
+        lelang_id: id,
+        vendor_id: vendorId,
+        nilai_penawaran: Number(nilaiPenawaran),
+        file_dokumen_penawaran: fileDokumen,
+        status_peserta: "Memasukkan Penawaran",
+      });
+
+      toast.success("Berhasil mendaftar dan mengirimkan penawaran lelang!");
+      setBidModalOpen(false);
+      fetchDetail();
+    } catch (err: any) {
+      toast.error("Gagal mendaftar lelang: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-slate-500">
+        <Lucide icon="Loader2" className="w-10 h-10 animate-spin mx-auto mb-3 text-primary" />
+        Memuat rincian lelang...
+      </div>
+    );
+  }
+
+  if (!lelang) {
+    return (
+      <div className="p-12 text-center text-slate-400">
+        <Lucide icon="AlertCircle" className="w-12 h-12 mx-auto mb-3 text-danger" />
+        Data lelang tidak ditemukan.
+        <div className="mt-4">
+          <Button variant="secondary" onClick={() => navigate("/dashboard/lelang/daftar-lelang")}>
+            Kembali ke Daftar Lelang
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const paket = lelang.paket || {};
+  const satker = paket.satker || {};
+  const pesertaList = lelang.peserta || [];
+  const userVendorId = currentUser?.vendor?.id;
+  const isAlreadyRegistered = pesertaList.some((p: any) => p.vendor_id === userVendorId);
 
   return (
     <div className="px-6 py-8">
+      {/* Header Info */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-100 dark:text-white mb-2">
-              {paket.nama_paket}
-            </h1>
-            <p className="text-gray-100 dark:text-gray-400">
-              Kode Paket: {paket.kode_paket}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="!text-white border-white/20"
+                onClick={() => navigate(-1)}
+              >
+                <Lucide icon="ArrowLeft" className="w-4 h-4 mr-1" />
+                Kembali
+              </Button>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
+                {lelang.judul_lelang || paket.nama_paket}
+              </h1>
+            </div>
+            <p className="text-slate-300 mt-1">
+              Nomor Lelang: <span className="font-semibold text-white">{lelang.no_lelang}</span> | Kode Paket: <span className="font-semibold text-white">{paket.kode_paket}</span>
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-100 dark:text-gray-400 mb-2">
-              Nilai Lelang
+
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+            <div className="text-right">
+              <div className="text-xs text-slate-300">Nilai Pagu Paket</div>
+              <div className="text-2xl font-bold text-emerald-400">
+                Rp {Number(paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
+              </div>
+              <div className="text-xs text-slate-400">
+                HPS: Rp {Number(paket.hps || 0).toLocaleString("id-ID")}
+              </div>
             </div>
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              Rp {paket.nilai.toLocaleString("id-ID")}
-            </div>
+
+            <Button
+              variant={isAlreadyRegistered ? "outline-secondary" : "primary"}
+              className={isAlreadyRegistered ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40" : "bg-primary text-white"}
+              onClick={() => {
+                if (isAlreadyRegistered) {
+                  toast.info("Anda sudah terdaftar sebagai peserta pada lelang ini.");
+                } else {
+                  setBidModalOpen(true);
+                }
+              }}
+            >
+              <Lucide icon={isAlreadyRegistered ? "CheckCircle" : "Send"} className="w-4 h-4 mr-2" />
+              {isAlreadyRegistered ? "Sudah Terdaftar" : "Ikuti Lelang & Tawar"}
+            </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-            <Lucide icon="AlertCircle" className="w-4 h-4 mr-1" />
-            {paket.tahap}
+        <div className="flex flex-wrap gap-2 mt-4">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+            <Lucide icon="AlertCircle" className="w-3.5 h-3.5 mr-1" />
+            Status: {lelang.status}
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-            {paket.jenis_paket === "tender" ? "Tender" : "Non Tender"}
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            {paket.jenis_paket === "tender" ? "Tender Terbuka" : "Pengadaan Langsung (Non-Tender)"}
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-            {paket.metode_pengadaan}
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Metode: {paket.metode_pengadaan || "Pascakualifikasi Satu File"}
+          </span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Satker: {satker.nama_satker || "Satuan Kerja"}
           </span>
         </div>
       </div>
 
-      <div className="border-b border-gray-300 dark:border-gray-700 mb-6">
+      {/* Tabs */}
+      <div className="border-b border-slate-700 mb-6">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab("pengumuman")}
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            className={`px-4 py-2.5 font-medium text-sm border-b-2 transition-colors flex items-center ${
               activeTab === "pengumuman"
-                ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                : "border-transparent text-gray-900 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                ? "border-primary text-primary"
+                : "border-transparent text-slate-300 hover:text-white"
             }`}
           >
-            <Lucide icon="Megaphone" className="w-4 h-4 inline mr-2" />
-            Pengumuman
+            <Lucide icon="Megaphone" className="w-4 h-4 mr-2" />
+            Pengumuman & Spesifikasi
           </button>
           <button
             onClick={() => setActiveTab("peserta")}
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            className={`px-4 py-2.5 font-medium text-sm border-b-2 transition-colors flex items-center ${
               activeTab === "peserta"
-                ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                : "border-transparent text-gray-900 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                ? "border-primary text-primary"
+                : "border-transparent text-slate-300 hover:text-white"
             }`}
           >
-            <Lucide icon="Users" className="w-4 h-4 inline mr-2" />
-            Peserta ({vendors.length})
+            <Lucide icon="Users" className="w-4 h-4 mr-2" />
+            Daftar Peserta ({pesertaList.length})
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        {activeTab === "pengumuman" && (
-          <PengumumanTab paket={paket} />
-        )}
+      {/* Tab Panels */}
+      <div className="box box--stacked p-6">
+        {activeTab === "pengumuman" ? (
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 border-b pb-2 border-slate-200/60 dark:border-darkmode-400">
+                Informasi & Jadwal Lelang
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Tanggal & Waktu Mulai</div>
+                  <div className="mt-1 font-medium text-slate-800 dark:text-white">
+                    {lelang.tanggal_mulai} {lelang.jam_mulai}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Batas Akhir Penawaran</div>
+                  <div className="mt-1 font-medium text-slate-800 dark:text-white">
+                    {lelang.tanggal_selesai} {lelang.jam_selesai}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Tahun Anggaran</div>
+                  <div className="mt-1 font-medium text-slate-800 dark:text-white">
+                    {paket.tahun_anggaran || new Date().getFullYear()}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        {activeTab === "peserta" && (
-          <PesertaTab vendors={vendors} />
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 border-b pb-2 border-slate-200/60 dark:border-darkmode-400">
+                Spesifikasi Paket Pengadaan
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Nama Paket</div>
+                  <div className="mt-1 font-semibold text-slate-800 dark:text-white">
+                    {paket.nama_paket}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Lokasi Pekerjaan</div>
+                  <div className="mt-1 text-slate-800 dark:text-white">
+                    {paket.lokasi_pekerjaan || "Sesuai Kerangka Acuan Kerja (KAK)"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Jenis Kontrak</div>
+                  <div className="mt-1 text-slate-800 dark:text-white capitalize">
+                    {paket.jenis_kontrak || "Lumsum / Harga Satuan"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Kualifikasi Usaha</div>
+                  <div className="mt-1">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                      {paket.kualifikasi_usaha || "Semua Kualifikasi"}
+                    </span>
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">Syarat Kualifikasi & Dokumen</div>
+                  <div className="mt-2 p-4 bg-slate-50 dark:bg-darkmode-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 whitespace-pre-line">
+                    {paket.syarat_kualifikasi || "1. Memiliki NIB dan Izin Usaha yang masih berlaku.\n2. Memiliki NPWP dan telah melunasi kewajiban perpajakan tahun terakhir (SPT Tahunan).\n3. Memiliki pengalaman penyediaan barang/jasa sejenis dalam 3 tahun terakhir.\n4. Tidak masuk dalam Daftar Hitam (Blacklist)."}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 border-b pb-2 border-slate-200/60 dark:border-darkmode-400">
+                Deskripsi & Ketentuan Tambahan
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line">
+                {lelang.deskripsi_lelang || "Penyedia yang berminat diwajibkan mengunggah seluruh dokumen penawaran teknis dan harga sebelum batas waktu yang telah ditentukan. Evaluasi penawaran dilakukan dengan sistem gugur untuk aspek administrasi dan teknis, dilanjutkan dengan pembobotan harga terbaik."}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                  Daftar Peserta Lelang
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Vendor terdaftar yang telah memasukkan kualifikasi dan penawaran
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table className="border-b border-slate-200/60">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Td className="w-12 py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                      No
+                    </Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                      Nama Vendor
+                    </Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                      Kode Vendor
+                    </Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                      Nilai Penawaran (Rp)
+                    </Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                      Skor Total
+                    </Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                      Status Evaluasi
+                    </Table.Td>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {pesertaList.length === 0 ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={6} className="py-8 text-center text-slate-500">
+                        Belum ada vendor yang mendaftar pada lelang ini.
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : (
+                    pesertaList.map((p: any, idx: number) => (
+                      <Table.Tr key={p.id || idx}>
+                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                          {idx + 1}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-semibold text-slate-800 dark:text-white">
+                          {p.vendor?.nama_perusahaan || `Vendor #${p.vendor_id}`}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-xs text-primary font-mono">
+                          {p.vendor?.id_vendor_code || "-"}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-semibold text-emerald-600">
+                          {p.nilai_penawaran ? `Rp ${Number(p.nilai_penawaran).toLocaleString("id-ID")}` : "-"}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                          {p.total_skor ? (
+                            <span className="font-semibold text-primary">{p.total_skor}</span>
+                          ) : (
+                            <span className="text-xs text-slate-400">Tahap Evaluasi</span>
+                          )}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                            p.status_peserta === 'Pemenang' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 font-bold' :
+                            p.status_peserta === 'Gugur' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                          }`}>
+                            {p.status_peserta || "Terdaftar"}
+                          </span>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))
+                  )}
+                </Table.Tbody>
+              </Table>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Modal Daftar & Kirim Penawaran */}
+      <Dialog open={bidModalOpen} onClose={() => setBidModalOpen(false)} className="relative z-50">
+        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
+            <Dialog.Title className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Lucide icon="Send" className="w-5 h-5 text-primary" />
+              Pendaftaran & Penawaran Lelang
+            </Dialog.Title>
+            <button onClick={() => setBidModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <Lucide icon="X" className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmitPenawaran} className="mt-5 space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Nama Paket Lelang
+              </label>
+              <div className="mt-1 p-2.5 bg-slate-100 dark:bg-darkmode-700 rounded text-sm text-slate-800 dark:text-white font-medium">
+                {lelang.judul_lelang || paket.nama_paket}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Nilai Penawaran Harga (Rp) *
+              </label>
+              <FormInput
+                type="number"
+                placeholder="Contoh: 450000000"
+                value={nilaiPenawaran}
+                onChange={(e) => setNilaiPenawaran(e.target.value)}
+                required
+                className="mt-1"
+              />
+              <div className="text-xs text-slate-500 mt-1">
+                Pagu: Rp {Number(paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Nama File Dokumen Penawaran Teknis & Harga *
+              </label>
+              <FormInput
+                type="text"
+                placeholder="Contoh: dokumen_penawaran_pt_vendor.pdf"
+                value={fileDokumen}
+                onChange={(e) => setFileDokumen(e.target.value)}
+                required
+                className="mt-1"
+              />
+              <div className="text-xs text-slate-500 mt-1">
+                Dokumen terenkripsi hingga waktu pembukaan lelang.
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Catatan Penawaran (Opsional)
+              </label>
+              <FormTextarea
+                rows={3}
+                placeholder="Tambahkan catatan khusus atau penjelasan masa berlaku penawaran..."
+                value={catatanPenawaran}
+                onChange={(e) => setCatatanPenawaran(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
+              <Button type="button" variant="outline-secondary" onClick={() => setBidModalOpen(false)}>
+                Batal
+              </Button>
+              <Button type="submit" variant="primary" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Lucide icon="Loader2" className="w-4 h-4 mr-2 animate-spin" />
+                    Mengirim...
+                  </>
+                ) : (
+                  <>
+                    <Lucide icon="Check" className="w-4 h-4 mr-2" />
+                    Kirim Penawaran
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Panel>
+      </Dialog>
     </div>
   );
 };
-
-interface PengumumanTabProps {
-  paket: Paket;
-}
-
-const PengumumanTab: React.FC<PengumumanTabProps> = ({ paket }) => (
-  <div className="p-6 space-y-8">
-    <div>
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Informasi Lelang
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Nama Paket
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.nama_paket}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Kode Paket
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.kode_paket}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Satker
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.satker}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Tahun Anggaran
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.tahun_anggaran}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Lokasi
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.lokasi}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Tahap
-          </label>
-          <p className="mt-1">
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-              {paket.tahap}
-            </span>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Detail Lelang
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Jenis Paket
-          </label>
-          <p className="mt-1">
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 capitalize">
-              {paket.jenis_paket}
-            </span>
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Jenis Kontrak
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.jenis_kontrak}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Jenis Pengadaan
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.jenis_pengadaan}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Metode Pengadaan
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white">{paket.metode_pengadaan}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Nilai Lelang
-          </label>
-          <p className="mt-1 text-lg font-semibold text-blue-600 dark:text-blue-400">
-            Rp {paket.nilai.toLocaleString("id-ID")}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Harga
-          </label>
-          <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
-            Rp {paket.harga.toLocaleString("id-ID")}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    {/* <div>
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Kriteria Penilaian
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Bobot Teknis
-          </label>
-          <p className="mt-1">
-            <span className="px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 font-semibold text-lg">
-              {paket.bobot_teknis}%
-            </span>
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Bobot Harga
-          </label>
-          <p className="mt-1">
-            <span className="px-4 py-2 rounded-lg bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200 font-semibold text-lg">
-              {paket.bobot_harga}%
-            </span>
-          </p>
-        </div>
-      </div>
-    </div> */}
-
-    <div>
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Informasi Tambahan
-      </h2>
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Syarat Peserta
-          </label>
-          <p className="mt-1 text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded">
-            {paket.syarat}
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Kode RUP
-            </label>
-            <p className="mt-1 text-gray-900 dark:text-white">{paket.rup.kode_rup}</p>
-          </div>
-          <div>
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Sumber Dana
-            </label>
-            <p className="mt-1 text-gray-900 dark:text-white">{paket.rup.sumber_dana}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600 dark:text-gray-400">
-        <div>
-          <span className="font-semibold">Dibuat:</span>{" "}
-          {new Date(paket.dateCreated).toLocaleString("id-ID")}
-        </div>
-        <div>
-          <span className="font-semibold">Diperbarui:</span>{" "}
-          {new Date(paket.dateUpdated).toLocaleString("id-ID")}
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-interface PesertaTabProps {
-  vendors: CompanyIdentity[];
-}
-
-const PesertaTab: React.FC<PesertaTabProps> = ({ vendors }) => (
-  <div className="p-6">
-    <div className="mb-4">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Daftar Peserta Lelang
-      </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        Total {vendors.length} vendor terdaftar
-      </p>
-    </div>
-
-    <div className="overflow-auto">
-      <Table className="border-b border-slate-200/60">
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Td className="w-5 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              <FormCheck.Input type="checkbox" />
-            </Table.Td>
-            <Table.Td className="w-5 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              No
-            </Table.Td>
-            <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              Nama Vendor
-            </Table.Td>
-            <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              ID Vendor
-            </Table.Td>
-            <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              Kualifikasi
-            </Table.Td>
-            <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              Lokasi
-            </Table.Td>
-            <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              Telepon
-            </Table.Td>
-            <Table.Td className="w-20 py-4 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-              Aksi
-            </Table.Td>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {_.take(vendors, 10).map((vendor, index) => (
-            <Table.Tr key={vendor.idvendor} className="[&_td]:last:border-b-0">
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                <FormCheck.Input type="checkbox" />
-              </Table.Td>
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                {index + 1}
-              </Table.Td>
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                <div className="font-semibold text-gray-900 dark:text-white">
-                  {vendor.name}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {vendor.website}
-                </div>
-              </Table.Td>
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 text-blue-700 dark:text-blue-400 font-semibold">
-                {vendor.idvendor}
-              </Table.Td>
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
-                  {vendor.qualified}
-                </span>
-              </Table.Td>
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                <div className="text-sm text-gray-900 dark:text-white">
-                  {vendor.city}
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {vendor.province}
-                </div>
-              </Table.Td>
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                <a
-                  href={`tel:${vendor.phone}`}
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  {vendor.phone}
-                </a>
-              </Table.Td>
-              <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                <div className="flex items-center justify-center">
-                  <Menu className="h-5">
-                    <Menu.Button className="w-5 h-5 text-slate-500">
-                      <Lucide
-                        icon="MoreVertical"
-                        className="w-5 h-5 stroke-slate-400/70 fill-slate-400/70"
-                      />
-                    </Menu.Button>
-                    <Menu.Items className="w-40">
-                      <Menu.Item>
-                        <Lucide icon="Eye" className="w-4 h-4 mr-2" />
-                        Lihat Detail
-                      </Menu.Item>
-                      <Menu.Item>
-                        <Lucide icon="Download" className="w-4 h-4 mr-2" />
-                        Unduh Dokumen
-                      </Menu.Item>
-                      <Menu.Item className="text-danger">
-                        <Lucide icon="Trash2" className="w-4 h-4 mr-2" />
-                        Hapus
-                      </Menu.Item>
-                    </Menu.Items>
-                  </Menu>
-                </div>
-              </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-    </div>
-
-    <div className="flex flex-col-reverse flex-wrap items-center p-5 flex-reverse gap-y-2 sm:flex-row">
-      <Pagination className="flex-1 w-full mr-auto sm:w-auto">
-        <Pagination.Link>
-          <Lucide icon="ChevronsLeft" className="w-4 h-4" />
-        </Pagination.Link>
-        <Pagination.Link>
-          <Lucide icon="ChevronLeft" className="w-4 h-4" />
-        </Pagination.Link>
-        <Pagination.Link>...</Pagination.Link>
-        <Pagination.Link>1</Pagination.Link>
-        <Pagination.Link active>2</Pagination.Link>
-        <Pagination.Link>3</Pagination.Link>
-        <Pagination.Link>...</Pagination.Link>
-        <Pagination.Link>
-          <Lucide icon="ChevronRight" className="w-4 h-4" />
-        </Pagination.Link>
-        <Pagination.Link>
-          <Lucide icon="ChevronsRight" className="w-4 h-4" />
-        </Pagination.Link>
-      </Pagination>
-    </div>
-  </div>
-);
 
 export default ShowDetailVendor;

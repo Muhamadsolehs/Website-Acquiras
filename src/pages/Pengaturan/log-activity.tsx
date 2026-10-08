@@ -1,47 +1,57 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Lucide from "@/components/Base/Lucide";
 import { FormInput, FormSelect } from "@/components/Base/Form";
 import Table from "@/components/Base/Table";
 import Button from "@/components/Base/Button";
 import Pagination from "@/components/Base/Pagination";
 import { Slideover } from "@/components/Base/Headless";
-import activitiesFaker from "@/fakers/activities";
+import api from "@/api/axiosinstance";
 
 function Main() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [period, setPeriod] = useState<"all" | "today" | "7" | "30">("all");
-  const [status, setStatus] = useState<string>("all");
+  const [moduleFilter, setModuleFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [openDetail, setOpenDetail] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
 
-  const data = useMemo(() => activitiesFaker.fakeActivities(), []);
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/activity-logs");
+      setLogs(res.data || []);
+    } catch (err) {
+      console.error("Gagal memuat activity logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
 
   const filtered = useMemo(() => {
-    let out = data;
+    let out = logs;
 
     if (q) {
-      out = out.filter((d) =>
-        `${d.activity} ${d.activityDetails || ""}`.toLowerCase().includes(q.toLowerCase())
+      out = out.filter(
+        (d) =>
+          `${d.action || ""} ${d.module || ""} ${d.description || ""} ${d.user?.username || ""}`
+            .toLowerCase()
+            .includes(q.toLowerCase())
       );
     }
 
-    if (status !== "all") {
-      out = out.filter((d) => (d.statusBadge || "").toLowerCase() === status.toLowerCase());
-    }
-
-    if (period === "today") {
-      out = out.slice(0, 3);
-    } else if (period === "7") {
-      out = out.slice(0, 7);
-    } else if (period === "30") {
-      out = out.slice(0, 12);
+    if (moduleFilter !== "all") {
+      out = out.filter((d) => (d.module || "").toLowerCase() === moduleFilter.toLowerCase());
     }
 
     return out;
-  }, [data, q, status, period]);
+  }, [logs, q, moduleFilter]);
 
-  const pageSize = 8;
+  const pageSize = 10;
   const paged = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
@@ -49,192 +59,212 @@ function Main() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
-  const getBadgeClass = (s?: string) => {
-    if (!s) return "bg-slate-200 text-slate-800";
-    const st = s.toLowerCase();
-    return st.includes("success")
-      ? "bg-emerald-500 text-white"
-      : st.includes("completed")
-      ? "bg-primary text-white"
-      : st.includes("info")
-      ? "bg-sky-500 text-white"
-      : st.includes("new")
-      ? "bg-amber-500 text-white"
-      : "bg-slate-400 text-white";
-  };
-
   return (
     <div className="grid grid-cols-12 gap-y-6 gap-x-6">
       <div className="col-span-12">
         <div className="flex items-start justify-between">
           <div>
-            <div className="text-base font-medium text-white">Log Activity</div>
-            <div className="text-sm text-slate-500 text-slate-100 mt-1">Riwayat aktivitas pengguna dan sistem</div>
+            <div className="text-base font-medium text-white">Log Aktivitas & Audit Trail</div>
+            <div className="text-sm text-slate-300 mt-1">
+              Catatan riwayat transaksi, otorisasi login, dan perubahan data sistem untuk kebutuhan audit
+            </div>
           </div>
+          <Button variant="outline-secondary" className="!text-white border-white/20" onClick={fetchLogs}>
+            <Lucide icon="RefreshCw" className="w-4 h-4 mr-1.5" />
+            Refresh Log
+          </Button>
         </div>
 
         <div className="grid grid-cols-12 gap-4 mt-6">
-          <div className="col-span-3">
-            <FormSelect value={period} onChange={(e) => setPeriod(e.target.value as any)}>
-              <option value="all">Semua Periode</option>
-              <option value="today">Hari Ini</option>
-              <option value="7">7 Hari</option>
-              <option value="30">30 Hari</option>
+          <div className="col-span-12 md:col-span-4">
+            <FormSelect value={moduleFilter} onChange={(e) => { setModuleFilter(e.target.value); setPage(1); }}>
+              <option value="all">Semua Modul</option>
+              <option value="AUTH">Autentikasi (AUTH)</option>
+              <option value="USER">Manajemen Akun (USER)</option>
+              <option value="VENDOR">Vendor Management</option>
+              <option value="LELANG">Lelang & Tender</option>
+              <option value="SANGGAHAN">Masa Sanggah</option>
+              <option value="KONTRAK">Kontrak Pekerjaan</option>
             </FormSelect>
           </div>
 
-          <div className="col-span-3">
-            <FormSelect value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="all">Semua Status</option>
-              <option value="Success">Success</option>
-              <option value="Completed">Completed</option>
-              <option value="Info">Info</option>
-              <option value="New">New</option>
-            </FormSelect>
-          </div>
-
-          <div className="col-span-6">
+          <div className="col-span-12 md:col-span-8">
             <div className="relative">
               <Lucide icon="Search" className="absolute inset-y-0 left-0 z-10 w-4 h-4 my-auto ml-3 stroke-[1.3] text-slate-500" />
-              <input
-                className="form-input pl-9 w-full rounded-[0.5rem]"
-                placeholder="Cari aktivitas..."
+              <FormInput
+                className="pl-9 rounded-[0.5rem]"
+                placeholder="Cari aktivitas, user, IP..."
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => { setQ(e.target.value); setPage(1); }}
               />
             </div>
           </div>
         </div>
 
-        <div className="mt-6 box p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm font-medium">Daftar Log</div>
-            <div className="text-xs text-slate-400">Menampilkan {filtered.length} aktivitas</div>
-          </div>
-
-          <div className="overflow-auto">
-            <Table className="border-b border-slate-200/60">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Td className="w-24 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">Tanggal</Table.Td>
-                  <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">Aktivitas</Table.Td>
-                  <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">Detail</Table.Td>
-                  <Table.Td className="w-36 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">Files / Images</Table.Td>
-                  <Table.Td className="w-24 py-4 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">Status</Table.Td>
-                  <Table.Td className="w-24 py-4 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">Aksi</Table.Td>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {paged.map((a, i) => (
-                  <Table.Tr key={i} className="[&_td]:last:border-b-0">
-                    <Table.Td className="py-4 text-sm">{a.date}</Table.Td>
-                    <Table.Td className="py-4 font-medium">{a.activity}</Table.Td>
-                    <Table.Td className="py-4 text-sm text-slate-500 max-w-[360px] truncate">{a.activityDetails || "-"}</Table.Td>
-                    <Table.Td className="py-4 text-sm">
-                      <div>{(a.uploadedFiles || []).length} file(s)</div>
-                      <div className="mt-1 text-xs text-slate-400">{(a.images || []).length} image(s)</div>
-                    </Table.Td>
-                    <Table.Td className="py-4 text-center">
-                      <div className={`inline-block px-2 py-[3px] text-xs rounded ${getBadgeClass(a.statusBadge)}`}>{a.statusBadge}</div>
-                    </Table.Td>
-                    <Table.Td className="py-4 text-center">
-                      <div className="flex items-center justify-center gap-x-2">
-                        <Button size="sm" variant="outline-primary" onClick={() => { setSelected(a); setOpenDetail(true); }}>Detail</Button>
-                      </div>
-                    </Table.Td>
+        <div className="mt-6 box box--stacked p-5">
+          {loading ? (
+            <div className="p-8 text-center text-slate-500">
+              <Lucide icon="Loader2" className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+              Memuat audit log...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="border-b border-slate-200/60">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Td className="w-12 py-3.5 font-medium border-t bg-slate-50 text-slate-500">No</Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 text-slate-500">Waktu</Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 text-slate-500">Pengguna</Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 text-slate-500">Modul</Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 text-slate-500">Aksi</Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 text-slate-500">Deskripsi / Detail</Table.Td>
+                    <Table.Td className="py-3.5 font-medium border-t bg-slate-50 text-slate-500">IP Address</Table.Td>
+                    <Table.Td className="w-24 py-3.5 font-medium text-center border-t bg-slate-50 text-slate-500">Aksi</Table.Td>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </div>
-
-          <div className="flex items-center justify-between mt-4">
-            <div>
-              <Pagination className="flex-1 w-full mr-auto sm:w-auto">
-                <Pagination.Link>
-                  <Lucide icon="ChevronLeft" className="w-4 h-4" />
-                </Pagination.Link>
-                <Pagination.Link>...</Pagination.Link>
-                <Pagination.Link>{page}</Pagination.Link>
-                <Pagination.Link>{Math.min(totalPages, page + 1)}</Pagination.Link>
-                <Pagination.Link>
-                  <Lucide icon="ChevronRight" className="w-4 h-4" />
-                </Pagination.Link>
-              </Pagination>
+                </Table.Thead>
+                <Table.Tbody>
+                  {paged.length === 0 ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={8} className="py-8 text-center text-slate-500">
+                        Tidak ada log aktivitas yang tercatat.
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : (
+                    paged.map((item, idx) => (
+                      <Table.Tr key={item.id || idx} className="hover:bg-slate-50/50">
+                        <Table.Td className="py-3.5 border-dashed">
+                          {(page - 1) * pageSize + idx + 1}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed text-xs text-slate-500 whitespace-nowrap">
+                          {item.created_at ? new Date(item.created_at).toLocaleString("id-ID") : "-"}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed">
+                          <div className="font-semibold text-slate-800 dark:text-white text-xs">
+                            {item.user?.username || `User #${item.user_id || "System"}`}
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            {item.user?.email || "-"}
+                          </div>
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                            {item.module || "SYSTEM"}
+                          </span>
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed font-semibold text-xs text-primary">
+                          {item.action}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed text-xs text-slate-600 dark:text-slate-300 max-w-xs truncate">
+                          {item.description || "-"}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed font-mono text-[11px] text-slate-500">
+                          {item.ip_address || "127.0.0.1"}
+                        </Table.Td>
+                        <Table.Td className="py-3.5 border-dashed text-center">
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="px-2 py-1 text-xs"
+                            onClick={() => {
+                              setSelected(item);
+                              setOpenDetail(true);
+                            }}
+                          >
+                            <Lucide icon="Eye" className="w-3.5 h-3.5" />
+                          </Button>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))
+                  )}
+                </Table.Tbody>
+              </Table>
             </div>
+          )}
 
-            <div className="text-xs text-slate-400">Halaman {page} dari {totalPages}</div>
-          </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200/60">
+              <span className="text-xs text-slate-500">
+                Halaman {page} dari {totalPages} ({filtered.length} total log)
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Sebelumnya
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Selanjutnya
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
 
-      <Slideover open={openDetail} onClose={() => setOpenDetail(false)} size="md">
-        <Slideover.Panel>
-          <Slideover.Title className="px-6 py-5">
-            <div className="flex items-center justify-between w-full">
-              <div>
-                <div className="text-base font-medium">Detail Activity</div>
-                <div className="text-xs text-slate-500">Rincian aktivitas</div>
-              </div>
-              <div>
-                <Button variant="primary" onClick={() => setOpenDetail(false)}>Tutup</Button>
-              </div>
+        {/* Slideover Detail */}
+        <Slideover open={openDetail} onClose={() => setOpenDetail(false)}>
+          <Slideover.Panel className="p-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
+              <Slideover.Title className="text-lg font-bold text-slate-800 dark:text-white">
+                Rincian Audit Log
+              </Slideover.Title>
+              <button onClick={() => setOpenDetail(false)} className="text-slate-400 hover:text-slate-600">
+                <Lucide icon="X" className="w-5 h-5" />
+              </button>
             </div>
-          </Slideover.Title>
 
-          <Slideover.Description>
-            {selected ? (
-              <div className="space-y-4">
-                <div className="box p-4">
-                  <div className="text-sm text-slate-500">Tanggal</div>
-                  <div className="font-medium">{selected.date}</div>
-
-                  <div className="text-sm text-slate-500 mt-3">Aktivitas</div>
-                  <div className="font-medium">{selected.activity}</div>
-
-                  <div className="text-sm text-slate-500 mt-3">Detail</div>
-                  <div className="text-sm text-slate-700">{selected.activityDetails || '-'}</div>
+            {selected && (
+              <div className="mt-5 space-y-4 text-sm">
+                <div>
+                  <span className="text-xs text-slate-500 uppercase font-bold">Waktu Transaksi</span>
+                  <div className="font-semibold text-slate-800 dark:text-white">
+                    {new Date(selected.created_at).toLocaleString("id-ID")}
+                  </div>
                 </div>
 
-                {selected.uploadedFiles && selected.uploadedFiles.length > 0 && (
-                  <div className="box p-4">
-                    <div className="text-sm text-slate-500 mb-2">Uploaded Files</div>
-                    <div className="space-y-2">
-                      {selected.uploadedFiles.map((f: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between">
-                          <div className="text-sm">{f.filename}</div>
-                          <div className="text-xs text-slate-400">{f.size}</div>
-                        </div>
-                      ))}
-                    </div>
+                <div>
+                  <span className="text-xs text-slate-500 uppercase font-bold">Pengguna</span>
+                  <div className="font-semibold text-slate-800 dark:text-white">
+                    {selected.user?.username} ({selected.user?.email || "-"})
                   </div>
-                )}
+                </div>
 
-                {selected.images && selected.images.length > 0 && (
-                  <div className="box p-4">
-                    <div className="text-sm text-slate-500 mb-2">Images</div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {selected.images.map((src: string, idx: number) => (
-                        <img key={idx} src={src} alt={`img-${idx}`} className="w-full h-24 object-cover rounded" />
-                      ))}
-                    </div>
+                <div>
+                  <span className="text-xs text-slate-500 uppercase font-bold">Modul & Aksi</span>
+                  <div className="font-medium text-primary">
+                    [{selected.module}] {selected.action}
                   </div>
-                )}
+                </div>
 
-                <div className="text-right">
-                  <div className={`inline-block px-3 py-1 text-sm rounded ${getBadgeClass(selected.statusBadge)}`}>{selected.statusBadge}</div>
+                <div>
+                  <span className="text-xs text-slate-500 uppercase font-bold">Deskripsi Lengkap</span>
+                  <div className="p-3 bg-slate-50 dark:bg-darkmode-700 rounded text-slate-800 dark:text-white whitespace-pre-line">
+                    {selected.description}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs text-slate-500 uppercase font-bold">IP Address & User Agent</span>
+                  <div className="font-mono text-xs text-slate-600 dark:text-slate-300">
+                    IP: {selected.ip_address || "127.0.0.1"}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1 truncate">
+                    UA: {selected.user_agent || "Antigravity Browser Client"}
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="text-center text-slate-400">Tidak ada data</div>
             )}
-          </Slideover.Description>
-
-          <Slideover.Footer>
-            <Button variant="primary" onClick={() => setOpenDetail(false)}>Tutup</Button>
-          </Slideover.Footer>
-        </Slideover.Panel>
-      </Slideover>
+          </Slideover.Panel>
+        </Slideover>
+      </div>
     </div>
   );
 }

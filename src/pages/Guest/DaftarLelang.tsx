@@ -1,17 +1,52 @@
+import { useState, useEffect } from "react";
 import { FormInput } from "@/components/Base/Form";
 import Lucide from "@/components/Base/Lucide";
-import paket from "@/fakers/paket";
 import MainTableLelangVendor from "@/components/Table/Lelang/vendor";
+import api from "@/api/axiosinstance";
 
 function GuestDaftarLelang() {
+  const [lelangList, setLelangList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [jenisFilter, setJenisFilter] = useState<"tender" | "non tender">("tender");
+
+  useEffect(() => {
+    const fetchLelang = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get("/lelang");
+        setLelangList(res.data || []);
+      } catch (err) {
+        console.error("Gagal memuat lelang publik:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLelang();
+  }, []);
+
+  const filteredData = lelangList.filter((item) => {
+    const jenis = (item.paket?.jenis_paket || "tender").toLowerCase();
+    const matchesJenis = jenis === jenisFilter;
+    const s = search.toLowerCase();
+    const matchesSearch =
+      !s ||
+      (item.no_lelang || "").toLowerCase().includes(s) ||
+      (item.judul_lelang || "").toLowerCase().includes(s) ||
+      (item.paket?.nama_paket || "").toLowerCase().includes(s) ||
+      (item.paket?.kode_paket || "").toLowerCase().includes(s);
+
+    return matchesJenis && matchesSearch;
+  });
+
   return (
     <div className="space-y-6 pb-10">
       <div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-          Daftar Lelang
+          Daftar Pengumuman Lelang & Tender
         </h1>
         <p className="mt-1 text-slate-600 dark:text-slate-400">
-          Daftar paket lelang yang tersedia.
+          Daftar paket pengadaan barang & jasa terbuka yang dapat diikuti oleh penyedia terdaftar.
         </p>
       </div>
 
@@ -24,12 +59,26 @@ function GuestDaftarLelang() {
             />
             <FormInput
               type="text"
-              placeholder="Cari data..."
-              className="pl-9 sm:w-64 rounded-[0.5rem]"
+              placeholder="Cari lelang, paket, kode..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 sm:w-72 rounded-[0.5rem]"
             />
           </div>
         </div>
-        <MainTableLelangVendor data={paket.fakePaket()} />
+
+        {loading ? (
+          <div className="p-8 text-center text-slate-500">
+            <Lucide icon="Loader2" className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+            Memuat pengumuman lelang...
+          </div>
+        ) : (
+          <MainTableLelangVendor
+            data={filteredData}
+            jenisFilter={jenisFilter}
+            onJenisFilterChange={setJenisFilter}
+          />
+        )}
       </div>
     </div>
   );

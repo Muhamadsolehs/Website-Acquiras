@@ -90,7 +90,9 @@ function Main() {
   const handleLogout = async () => {
     try {
       const apiUrl =
-        import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+        import.meta.env.VITE_API_URL ||
+        import.meta.env.VITE_API_BASE_URL ||
+        "http://127.0.0.1:8000/api";
 
       const token = localStorage.getItem("eproc_token");
 

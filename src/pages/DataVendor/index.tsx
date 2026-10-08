@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import companyFakers from "../../fakers/company";
 import {
   CompanyIdentity,
@@ -8,11 +8,84 @@ import {
   Experience,
   WorkEquipment,
 } from "../../fakers/company";
+import api from "@/api/axiosinstance";
+import { toast } from "sonner";
+import Lucide from "@/components/Base/Lucide";
+import Button from "@/components/Base/Button";
 
 const DataVendor: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("identitas");
   const [activeManajerialTab, setActiveManajerialTab] = useState<string>("owner");
-  const company = companyFakers.fakeCompanyIdentities()[0];
+  const [company, setCompany] = useState<any>(companyFakers.fakeCompanyIdentities()[0]);
+  const [vendorRecord, setVendorRecord] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [identitasForm, setIdentitasForm] = useState<any>({
+    nama_perusahaan: "",
+    bentuk_usaha: "PT",
+    npwp: "",
+    kualifikasi: "Kecil",
+    alamat: "",
+    kode_pos: "",
+    provinsi: "",
+    kabupaten_kota: "",
+    no_telepon: "",
+    no_fax: "",
+    website: "",
+    email_perusahaan: "",
+  });
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/vendors/me/profile");
+      if (res.data) {
+        setVendorRecord(res.data);
+        setIdentitasForm({
+          nama_perusahaan: res.data.nama_perusahaan || "",
+          bentuk_usaha: res.data.bentuk_usaha || "PT",
+          npwp: res.data.npwp || "",
+          kualifikasi: res.data.kualifikasi || "Kecil",
+          alamat: res.data.alamat || "",
+          kode_pos: res.data.kode_pos || "",
+          provinsi: res.data.provinsi || "",
+          kabupaten_kota: res.data.kabupaten_kota || "",
+          no_telepon: res.data.no_telepon || "",
+          no_fax: res.data.no_fax || "",
+          website: res.data.website || "",
+          email_perusahaan: res.data.email_perusahaan || "",
+        });
+      }
+    } catch (err) {
+      console.warn("Could not fetch vendor profile, using default data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const handleSaveIdentitas = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vendorRecord?.id) {
+      toast.info("Profil tersimpan dalam sesi lokal");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await api.put(`/vendors/${vendorRecord.id}`, identitasForm);
+      toast.success("Identitas dan data perusahaan vendor berhasil diperbarui!");
+      fetchProfile();
+    } catch (err: any) {
+      toast.error("Gagal menyimpan identitas: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const tabs = [
     { id: "identitas", label: "Identitas" },
@@ -28,10 +101,10 @@ const DataVendor: React.FC = () => {
     <div className="px-6 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-100 dark:text-white mb-2">
-          Data Vendor
+          Data Vendor & Profil Usaha
         </h1>
         <p className="text-gray-100 dark:text-gray-400">
-          Informasi lengkap vendor PT Maju Jaya
+          Informasi lengkap profil penyedia {vendorRecord?.nama_perusahaan ? `(${vendorRecord.nama_perusahaan})` : "PT Maju Jaya"}
         </p>
       </div>
 
@@ -60,7 +133,186 @@ const DataVendor: React.FC = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         {activeTab === "identitas" && (
-          <IdentitasTab company={company} />
+          <form onSubmit={handleSaveIdentitas}>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Nama Perusahaan *
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.nama_perusahaan}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, nama_perusahaan: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    ID Vendor / Kode
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    className={`${inputClass} bg-slate-100 cursor-not-allowed font-mono text-primary`}
+                    value={vendorRecord?.id_vendor_code || "VND-AUTO"}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Bentuk Usaha *
+                  </label>
+                  <select
+                    className={inputClass}
+                    value={identitasForm.bentuk_usaha}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, bentuk_usaha: e.target.value })}
+                  >
+                    <option value="PT">PT (Perseroan Terbatas)</option>
+                    <option value="CV">CV (Commanditaire Vennootschap)</option>
+                    <option value="Firma">Firma</option>
+                    <option value="Koperasi">Koperasi</option>
+                    <option value="Perorangan">Perorangan</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    NPWP Perusahaan *
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.npwp}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, npwp: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Alamat Lengkap *
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.alamat}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, alamat: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Kode Pos
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.kode_pos}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, kode_pos: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Provinsi *
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.provinsi}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, provinsi: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Kabupaten / Kota *
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.kabupaten_kota}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, kabupaten_kota: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Telepon *
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.no_telepon}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, no_telepon: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Fax
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.no_fax}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, no_fax: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Website Perusahaan
+                  </label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={identitasForm.website}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, website: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Email Perusahaan *
+                  </label>
+                  <input
+                    type="email"
+                    className={inputClass}
+                    value={identitasForm.email_perusahaan}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, email_perusahaan: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Kualifikasi Usaha *
+                  </label>
+                  <select
+                    className={inputClass}
+                    value={identitasForm.kualifikasi}
+                    onChange={(e) => setIdentitasForm({ ...identitasForm, kualifikasi: e.target.value })}
+                  >
+                    <option value="Kecil">Kecil</option>
+                    <option value="Menengah">Menengah</option>
+                    <option value="Besar">Besar</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-darkmode-600">
+                <Button type="submit" variant="primary" disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Lucide icon="Loader2" className="w-4 h-4 mr-2 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Lucide icon="Save" className="w-4 h-4 mr-2" />
+                      Simpan Perubahan Identitas
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
         )}
 
         {activeTab === "izin-usaha" && (
@@ -95,6 +347,7 @@ const DataVendor: React.FC = () => {
     </div>
   );
 };
+
 
 
 interface IdentitasTabProps {

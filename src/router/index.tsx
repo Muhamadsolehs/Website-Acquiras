@@ -46,6 +46,7 @@ import GuestDaftarHitam from "../pages/Guest/DaftarHitam";
 import GuestMonitoringPengadaan from "../pages/Guest/MonitoringPengadaan";
 import path from "path";
 import Login from "../pages/Login";
+import Register from "../pages/Register";
 import GuestRoute from "./guestRoute";
 import ProtectedRoute from "./protectedRoute";
 
@@ -66,6 +67,14 @@ function Router() {
       element: (
         <GuestRoute>
           <Login />
+        </GuestRoute>
+      ),
+    },
+    {
+      path: "/register",
+      element: (
+        <GuestRoute>
+          <Register />
         </GuestRoute>
       ),
     },
@@ -197,6 +206,10 @@ function Router() {
         {
           path: "penilaian/setting",
           element: <SettingPenilaian />,
+        },
+        {
+          path: "pengaturan",
+          element: <Pengaturan />,
         },
         {
           path: "pengaturan/other",

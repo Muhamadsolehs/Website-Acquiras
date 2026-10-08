@@ -10,8 +10,14 @@ export default defineConfig({
       include: ["tailwind.config.js", "node_modules/**"],
     },
   },
-  server:{
-port: 3001
+  server: {
+    port: 3001,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
   },
   optimizeDeps: {
     include: ["tailwind-config"],

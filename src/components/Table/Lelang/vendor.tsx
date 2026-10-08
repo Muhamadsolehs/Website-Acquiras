@@ -112,76 +112,100 @@ function MainTable({
         <Table className="border-b border-slate-200/60">
           <Table.Thead>
             <Table.Tr>
-              <Table.Td className="w-5 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                <FormCheck.Input type="checkbox" />
-              </Table.Td>
-              <Table.Td className="w-5 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+              <Table.Td className="w-12 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
                 No
               </Table.Td>
               <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Kode Paket
+                Kode / No Lelang
               </Table.Td>
               <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Nama Paket
+                Nama Paket Pengadaan
               </Table.Td>
               <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Tahap Paket
+                Satker / Instansi
               </Table.Td>
               <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Tgl Dibuat
+                Nilai Pagu (Rp)
               </Table.Td>
-              {/* <Table.Td className="w-20 py-4 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+              <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                Status / Tahap
+              </Table.Td>
+              <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                Jadwal
+              </Table.Td>
+              <Table.Td className="w-36 py-4 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
                 Aksi
-              </Table.Td> */}
+              </Table.Td>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {_.take(filteredData, 10).map((faker, fakerKey) => (
-              <Table.Tr key={fakerKey} className="[&_td]:last:border-b-0">
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  <FormCheck.Input type="checkbox" />
+            {filteredData.length === 0 ? (
+              <Table.Tr>
+                <Table.Td colSpan={8} className="py-8 text-center text-slate-500">
+                  Tidak ada paket lelang {jenisTab} yang tersedia saat ini.
                 </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  {fakerKey + 1}
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 text-blue-700">
-                  <Link to={`/lelang/show/${faker.id}`}>{faker.kode_paket}</Link>
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  {faker.nama_paket}
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed capitalize dark:bg-darkmode-600">
-                  {faker.tahap}
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  {new Date(faker.dateCreated).toLocaleDateString("id-ID")}
-                </Table.Td>
-                {/* <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  <div className="flex items-center justify-center">
-                    <Menu className="h-5">
-                      <Menu.Button className="w-5 h-5 text-slate-500">
-                        <Lucide
-                          icon="MoreVertical"
-                          className="w-5 h-5 stroke-slate-400/70 fill-slate-400/70"
-                        />
-                      </Menu.Button>
-                      <Menu.Items className="w-40">
-                        <Menu.Item
-                          onClick={() => navigate(`/pemohon/edit/${faker.id}`)}
-                        >
-                          <Lucide icon="CheckSquare" className="w-4 h-4 mr-2" />{" "}
-                          Ubah
-                        </Menu.Item>
-                        <Menu.Item className="text-danger">
-                          <Lucide icon="Trash2" className="w-4 h-4 mr-2" />
-                          Hapus
-                        </Menu.Item>
-                      </Menu.Items>
-                    </Menu>
-                  </div>
-                </Table.Td> */}
               </Table.Tr>
-            ))}
+            ) : (
+              _.take(filteredData, 15).map((faker, fakerKey) => {
+                const kode = faker.no_lelang || faker.kode_paket || faker.paket?.kode_paket || `LLG-${faker.id}`;
+                const nama = faker.judul_lelang || faker.nama_paket || faker.paket?.nama_paket || "Paket Pengadaan";
+                const satker = faker.paket?.satker?.nama_satker || faker.satker || "Satker Pengadaan";
+                const nilai = faker.paket?.nilai_pagu_paket || faker.nilai || 0;
+                const status = faker.status || faker.tahap || "Aktif";
+                const tgl = faker.tanggal_mulai ? `${faker.tanggal_mulai} s/d ${faker.tanggal_selesai || '-'}` : (faker.dateCreated ? new Date(faker.dateCreated).toLocaleDateString("id-ID") : "-");
+
+                return (
+                  <Table.Tr key={faker.id || fakerKey} className="[&_td]:last:border-b-0 hover:bg-slate-50/50">
+                    <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
+                      {fakerKey + 1}
+                    </Table.Td>
+                    <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 font-medium">
+                      <Link to={`/dashboard/lelang/show/${faker.id}`} className="text-primary hover:underline">
+                        {kode}
+                      </Link>
+                    </Table.Td>
+                    <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
+                      <div className="font-semibold text-slate-800 dark:text-white line-clamp-2">
+                        {nama}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        Metode: {faker.paket?.metode_pengadaan || faker.metode_pengadaan || "Tender Terbuka"}
+                      </div>
+                    </Table.Td>
+                    <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 text-slate-600 dark:text-slate-300">
+                      {satker}
+                    </Table.Td>
+                    <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 font-semibold text-emerald-600 dark:text-emerald-400">
+                      Rp {Number(nilai).toLocaleString("id-ID")}
+                    </Table.Td>
+                    <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        status === 'Aktif' || status === 'Pendaftaran' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' :
+                        status === 'Evaluasi' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' :
+                        status === 'Masa Sanggah' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' :
+                        'bg-slate-100 text-slate-800 dark:bg-darkmode-400 dark:text-slate-300'
+                      }`}>
+                        {status}
+                      </span>
+                    </Table.Td>
+                    <Table.Td className="py-4 border-dashed text-xs text-slate-500 dark:bg-darkmode-600">
+                      {tgl}
+                    </Table.Td>
+                    <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 text-center">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="text-xs px-3 py-1.5"
+                        onClick={() => navigate(`/dashboard/lelang/show/${faker.id}`)}
+                      >
+                        <Lucide icon="FileSearch" className="w-3.5 h-3.5 mr-1" />
+                        Ikuti Lelang
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })
+            )}
           </Table.Tbody>
         </Table>
       </div>

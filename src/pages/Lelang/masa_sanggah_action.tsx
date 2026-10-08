@@ -1,576 +1,452 @@
-import React, { useState } from "react";
-import Lucide from "@/components/Base/Lucide";
-import { FormInput, FormSelect, FormTextarea, FormHelp } from "@/components/Base/Form";
-import Table from "@/components/Base/Table";
-import { FormCheck } from "@/components/Base/Form";
-import Button from "@/components/Base/Button";
-import { Menu } from "@/components/Base/Headless";
-import Pagination from "@/components/Base/Pagination";
-import paketFakers, { Paket } from "@/fakers/paket";
-import companyFakers, { CompanyIdentity } from "@/fakers/company";
-import _ from "lodash";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-interface Sanggahan {
-  id: number;
-  vendor: CompanyIdentity;
-  tanggalSanggah: Date;
-  noSurat: string;
-  alasanSanggah: string;
-  dokumentasi: string;
-  status: "baru" | "sedang_ditinjau" | "ditolak" | "diterima";
-}
+import Lucide from "@/components/Base/Lucide";
+import { FormInput, FormSelect, FormTextarea } from "@/components/Base/Form";
+import Table from "@/components/Base/Table";
+import Button from "@/components/Base/Button";
+import { Dialog } from "@/components/Base/Headless";
+import api from "@/api/axiosinstance";
+import { toast } from "sonner";
 
 const MasaSanggahAction: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
-  const [activeTab, setActiveTab] = useState<"pengumuman" | "masa-sanggah">("pengumuman");
-  const [showForm, setShowForm] = useState(false);
+  const { id } = useParams<{ id: string }>();
+  const [lelang, setLelang] = useState<any>(null);
+  const [sanggahanList, setSanggahanList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const paket = paketFakers.fakePaket()[0];
-  const vendors = companyFakers.fakeCompanyIdentities();
-
+  // Form states
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    vendorId: "",
     noSurat: "",
+    tanggalSanggah: new Date().toISOString().split("T")[0],
     alasanSanggah: "",
+    fileDokumentasi: "dokumen_bukti_sanggahan.pdf",
   });
 
-  const sanggahanList: Sanggahan[] = [
-    {
-      id: 1,
-      vendor: vendors[0],
-      tanggalSanggah: new Date("2024-02-01"),
-      noSurat: "SG-001/2024",
-      alasanSanggah: "Evaluasi harga tidak sesuai dengan ketentuan",
-      dokumentasi: "dokumen_sanggahan_001.pdf",
-      status: "sedang_ditinjau",
-    },
-    {
-      id: 2,
-      vendor: vendors[1],
-      tanggalSanggah: new Date("2024-02-02"),
-      noSurat: "SG-002/2024",
-      alasanSanggah: "Terdapat cacat dalam proses evaluasi teknis",
-      dokumentasi: "dokumen_sanggahan_002.pdf",
-      status: "baru",
-    },
-  ];
+  // Admin Review / Response Modal
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedSanggahan, setSelectedSanggahan] = useState<any>(null);
+  const [reviewStatus, setReviewStatus] = useState("diterima");
+  const [jawabanSanggah, setJawabanSanggah] = useState("");
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [lelangRes, sanggahanRes] = await Promise.all([
+        api.get(`/lelang/${id}`),
+        api.get(`/sanggahan?lelang_id=${id}`),
+      ]);
+      setLelang(lelangRes.data);
+      setSanggahanList(sanggahanRes.data || []);
+    } catch (err: any) {
+      toast.error("Gagal memuat data sanggahan: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmitSanggahan = (e: React.FormEvent) => {
+  useEffect(() => {
+    const rawUser = localStorage.getItem("eproc_user");
+    if (rawUser) {
+      try {
+        setCurrentUser(JSON.parse(rawUser));
+      } catch (e) {}
+    }
+    if (id) {
+      fetchData();
+    }
+  }, [id]);
+
+  const isAdmin = currentUser?.role_id === 1 || currentUser?.role?.id === 1;
+
+  const handleSubmitSanggahan = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    setFormData({ vendorId: "", noSurat: "", alasanSanggah: "" });
-    setShowForm(false);
-  };
+    const vendorId = currentUser?.vendor?.id || 1;
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "baru":
-        return "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
-      case "sedang_ditinjau":
-        return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200";
-      case "diterima":
-        return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
-      case "ditolak":
-        return "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200";
-      default:
-        return "bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200";
+    try {
+      setSubmitting(true);
+      await api.post("/sanggahan", {
+        lelang_id: id,
+        vendor_id: vendorId,
+        no_surat: formData.noSurat,
+        tanggal_sanggah: formData.tanggalSanggah,
+        alasan_sanggah: formData.alasanSanggah,
+        file_dokumentasi: formData.fileDokumentasi,
+        status: "baru",
+      });
+
+      toast.success("Sanggahan berhasil diajukan ke Pokja Pemilihan!");
+      setShowSubmitModal(false);
+      setFormData({
+        noSurat: "",
+        tanggalSanggah: new Date().toISOString().split("T")[0],
+        alasanSanggah: "",
+        fileDokumentasi: "dokumen_bukti_sanggahan.pdf",
+      });
+      fetchData();
+    } catch (err: any) {
+      toast.error("Gagal mengajukan sanggahan: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "baru":
-        return "Baru";
-      case "sedang_ditinjau":
-        return "Sedang Ditinjau";
-      case "diterima":
-        return "Diterima";
-      case "ditolak":
-        return "Ditolak";
-      default:
-        return status;
+  const handleUpdateJawabanSanggahan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSanggahan) return;
+
+    try {
+      setSubmitting(true);
+      await api.put(`/sanggahan/${selectedSanggahan.id}`, {
+        status: reviewStatus,
+        jawaban_sanggah: jawabanSanggah,
+      });
+
+      toast.success("Keputusan & balasan sanggahan berhasil disimpan!");
+      setReviewModalOpen(false);
+      setSelectedSanggahan(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Gagal menyimpan jawaban: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const openReviewModal = (item: any) => {
+    setSelectedSanggahan(item);
+    setReviewStatus(item.status || "sedang_ditinjau");
+    setJawabanSanggah(item.jawaban_sanggah || "");
+    setReviewModalOpen(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-slate-500">
+        <Lucide icon="Loader2" className="w-10 h-10 animate-spin mx-auto mb-3 text-primary" />
+        Memuat data sanggahan...
+      </div>
+    );
+  }
+
+  const paket = lelang?.paket || {};
 
   return (
-    <div className="grid grid-cols-12 gap-y-10 gap-x-6">
-      <div className="col-span-12">
-        <div className="flex flex-col justify-between mb-6 md:flex-row md:items-start gap-4">
+    <div className="px-6 py-8">
+      {/* Header Info */}
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-100 dark:text-white mb-2">
-              Masa Sanggah
-            </h1>
-            <p className="text-gray-100 dark:text-gray-400 mb-3">
-              {paket.nama_paket}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="!text-white border-white/20"
+                onClick={() => navigate(-1)}
+              >
+                <Lucide icon="ArrowLeft" className="w-4 h-4 mr-1" />
+                Kembali
+              </Button>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
+                Masa Sanggah Lelang
+              </h1>
+            </div>
+            <p className="text-slate-300 mt-1">
+              Paket: <span className="font-semibold text-white">{lelang?.judul_lelang || paket.nama_paket}</span> ({lelang?.no_lelang})
             </p>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
-                <Lucide icon="AlertCircle" className="w-4 h-4 mr-1" />
-                Masa Sanggah Berlangsung
-              </span>
-            </div>
           </div>
-          <Button
-            onClick={() => navigate("/lelang/masa-sanggah")}
-            variant="secondary"
-            className="flex items-center gap-2"
-          >
-            <Lucide icon="ArrowLeft" className="w-4 h-4" />
-            Kembali
-          </Button>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-slate-200/60 dark:border-gray-700">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Total Sanggahan
-            </div>
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {sanggahanList.length}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-slate-200/60 dark:border-gray-700">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Sedang Ditinjau
-            </div>
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-              {sanggahanList.filter((s) => s.status === "sedang_ditinjau").length}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-slate-200/60 dark:border-gray-700">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Baru
-            </div>
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-              {sanggahanList.filter((s) => s.status === "baru").length}
-            </div>
-          </div>
-        </div>
-
-        <div className="border-b border-gray-300 dark:border-gray-700 mb-6">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveTab("pengumuman")}
-              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "pengumuman"
-                  ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                  : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
-              }`}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="primary"
+              className="bg-primary text-white"
+              onClick={() => setShowSubmitModal(true)}
             >
-              <Lucide icon="Megaphone" className="w-4 h-4 inline mr-2" />
-              Pengumuman
+              <Lucide icon="ShieldAlert" className="w-4 h-4 mr-2" />
+              Ajukan Sanggahan
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+          <div className="box box--stacked p-4">
+            <div className="text-xs text-slate-500">Nilai Pagu Paket</div>
+            <div className="text-xl font-bold text-emerald-600 mt-1">
+              Rp {Number(paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
+            </div>
+          </div>
+          <div className="box box--stacked p-4">
+            <div className="text-xs text-slate-500">Total Sanggahan Masuk</div>
+            <div className="text-xl font-bold text-slate-800 dark:text-white mt-1">
+              {sanggahanList.length} Berkas
+            </div>
+          </div>
+          <div className="box box--stacked p-4">
+            <div className="text-xs text-slate-500">Sanggahan Diterima</div>
+            <div className="text-xl font-bold text-emerald-600 mt-1">
+              {sanggahanList.filter((s) => s.status === "diterima").length}
+            </div>
+          </div>
+          <div className="box box--stacked p-4">
+            <div className="text-xs text-slate-500">Sanggahan Ditolak</div>
+            <div className="text-xl font-bold text-danger mt-1">
+              {sanggahanList.filter((s) => s.status === "ditolak").length}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sanggahan Table */}
+      <div className="box box--stacked p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+            Daftar Berkas Sanggahan
+          </h3>
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table className="border-b border-slate-200/60">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Td className="w-12 py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                  No
+                </Table.Td>
+                <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                  Nomor Surat
+                </Table.Td>
+                <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                  Penyedia / Vendor
+                </Table.Td>
+                <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                  Tgl Sanggah
+                </Table.Td>
+                <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                  Substansi / Alasan Sanggah
+                </Table.Td>
+                <Table.Td className="py-3.5 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                  Status
+                </Table.Td>
+                <Table.Td className="w-40 py-3.5 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
+                  Aksi
+                </Table.Td>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {sanggahanList.length === 0 ? (
+                <Table.Tr>
+                  <Table.Td colSpan={7} className="py-8 text-center text-slate-500">
+                    Belum ada sanggahan yang masuk untuk paket pengadaan ini.
+                  </Table.Td>
+                </Table.Tr>
+              ) : (
+                sanggahanList.map((item, idx) => (
+                  <Table.Tr key={item.id || idx} className="hover:bg-slate-50/50">
+                    <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                      {idx + 1}
+                    </Table.Td>
+                    <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-mono text-xs font-semibold text-primary">
+                      {item.no_surat}
+                    </Table.Td>
+                    <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-semibold text-slate-800 dark:text-white">
+                      {item.vendor?.nama_perusahaan || `Vendor #${item.vendor_id}`}
+                    </Table.Td>
+                    <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-xs text-slate-500">
+                      {item.tanggal_sanggah}
+                    </Table.Td>
+                    <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                      <div className="text-sm font-medium text-slate-800 dark:text-white line-clamp-2">
+                        {item.alasan_sanggah}
+                      </div>
+                      {item.jawaban_sanggah && (
+                        <div className="mt-1 text-xs text-slate-500 italic bg-slate-100 dark:bg-darkmode-700 p-1.5 rounded">
+                          Balasan Pokja: {item.jawaban_sanggah}
+                        </div>
+                      )}
+                    </Table.Td>
+                    <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        item.status === 'diterima' ? 'bg-emerald-100 text-emerald-800' :
+                        item.status === 'ditolak' ? 'bg-red-100 text-red-800' :
+                        item.status === 'sedang_ditinjau' ? 'bg-amber-100 text-amber-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {item.status === 'diterima' ? 'Diterima' : item.status === 'ditolak' ? 'Ditolak' : item.status === 'sedang_ditinjau' ? 'Ditinjau' : 'Baru'}
+                      </span>
+                    </Table.Td>
+                    <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-center">
+                      {isAdmin ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="text-xs px-2.5 py-1"
+                          onClick={() => openReviewModal(item)}
+                        >
+                          <Lucide icon="CheckSquare" className="w-3.5 h-3.5 mr-1" />
+                          Beri Balasan
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-slate-400">Tersedia untuk Pokja</span>
+                      )}
+                    </Table.Td>
+                  </Table.Tr>
+                ))
+              )}
+            </Table.Tbody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Modal Ajukan Sanggahan (Vendor) */}
+      <Dialog open={showSubmitModal} onClose={() => setShowSubmitModal(false)} className="relative z-50">
+        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
+            <Dialog.Title className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Lucide icon="ShieldAlert" className="w-5 h-5 text-warning" />
+              Pengajuan Surat Sanggahan
+            </Dialog.Title>
+            <button onClick={() => setShowSubmitModal(false)} className="text-slate-400 hover:text-slate-600">
+              <Lucide icon="X" className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => setActiveTab("masa-sanggah")}
-              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "masa-sanggah"
-                  ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                  : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
-              }`}
-            >
-              <Lucide icon="MessageSquare" className="w-4 h-4 inline mr-2" />
-              Masa Sanggah ({sanggahanList.length})
-            </button>
           </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          {activeTab === "pengumuman" && (
-            <PengumumanTab paket={paket} />
-          )}
-
-          {/* TAB: MASA SANGGAH */}
-          {activeTab === "masa-sanggah" && (
-            <MasaSanggahTab
-              paket={paket}
-              sanggahanList={sanggahanList}
-              showForm={showForm}
-              setShowForm={setShowForm}
-              formData={formData}
-              handleInputChange={handleInputChange}
-              handleSubmitSanggahan={handleSubmitSanggahan}
-              vendors={vendors}
-              getStatusBadgeColor={getStatusBadgeColor}
-              getStatusLabel={getStatusLabel}
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface PengumumanTabProps {
-  paket: Paket;
-}
-
-const PengumumanTab: React.FC<PengumumanTabProps> = ({ paket }) => (
-  <div className="p-6 space-y-6">
-    <div>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Informasi Lelang
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-darkmode-400 p-6 rounded-lg">
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Nama Paket
-          </label>
-          <p className="mt-2 text-gray-900 dark:text-white">{paket.nama_paket}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Kode Paket
-          </label>
-          <p className="mt-2 text-blue-600 dark:text-blue-400 font-mono">
-            {paket.kode_paket}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Satker
-          </label>
-          <p className="mt-2 text-gray-900 dark:text-white">{paket.satker}</p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Lokasi
-          </label>
-          <p className="mt-2 text-gray-900 dark:text-white">{paket.lokasi}</p>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Detail Lelang
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-darkmode-400 p-6 rounded-lg">
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Jenis Paket
-          </label>
-          <p className="mt-2">
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 capitalize">
-              {paket.jenis_paket}
-            </span>
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Metode Pengadaan
-          </label>
-          <p className="mt-2 text-gray-900 dark:text-white">
-            {paket.metode_pengadaan}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Nilai Lelang
-          </label>
-          <p className="mt-2 text-lg font-bold text-blue-600 dark:text-blue-400">
-            Rp {paket.nilai.toLocaleString("id-ID")}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Tahap
-          </label>
-          <p className="mt-2">
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
-              {paket.tahap}
-            </span>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    {/* <div>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Kriteria Penilaian
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-          <div className="text-sm text-blue-700 dark:text-blue-300 font-semibold mb-2">
-            Bobot Teknis
-          </div>
-          <div className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-            {paket.bobot_teknis}%
-          </div>
-        </div>
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-          <div className="text-sm text-green-700 dark:text-green-300 font-semibold mb-2">
-            Bobot Harga
-          </div>
-          <div className="text-4xl font-bold text-green-600 dark:text-green-400">
-            {paket.bobot_harga}%
-          </div>
-        </div>
-      </div>
-    </div> */}
-  </div>
-);
-
-interface MasaSanggahTabProps {
-  paket: Paket;
-  sanggahanList: Sanggahan[];
-  showForm: boolean;
-  setShowForm: (show: boolean) => void;
-  formData: {
-    vendorId: string;
-    noSurat: string;
-    alasanSanggah: string;
-  };
-  handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => void;
-  handleSubmitSanggahan: (e: React.FormEvent) => void;
-  vendors: CompanyIdentity[];
-  getStatusBadgeColor: (status: string) => string;
-  getStatusLabel: (status: string) => string;
-}
-
-const MasaSanggahTab: React.FC<MasaSanggahTabProps> = ({
-  paket,
-  sanggahanList,
-  showForm,
-  setShowForm,
-  formData,
-  handleInputChange,
-  handleSubmitSanggahan,
-  vendors,
-  getStatusBadgeColor,
-  getStatusLabel,
-}) => (
-  <div className="p-6 space-y-6">
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Input Sanggahan
-        </h2>
-        <Button
-          variant={showForm ? "secondary" : "primary"}
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2"
-        >
-          <Lucide icon={showForm ? "X" : "Plus"} className="w-4 h-4" />
-          {showForm ? "Tutup" : "Tambah Sanggahan"}
-        </Button>
-      </div>
-
-      {showForm && (
-        <form
-          onSubmit={handleSubmitSanggahan}
-          className="bg-slate-50 dark:bg-darkmode-400 border border-slate-200 dark:border-gray-700 rounded-lg p-6 mb-6"
-        >
-          <div className="grid grid-cols-1 gap-6">
+          <form onSubmit={handleSubmitSanggahan} className="mt-5 space-y-4">
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                Vendor
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Nomor Surat Resmi Sanggahan *
+              </label>
+              <FormInput
+                type="text"
+                placeholder="Contoh: 012/SGH-VND/X/2026"
+                value={formData.noSurat}
+                onChange={(e) => setFormData({ ...formData, noSurat: e.target.value })}
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Tanggal Pengajuan *
+              </label>
+              <FormInput
+                type="date"
+                value={formData.tanggalSanggah}
+                onChange={(e) => setFormData({ ...formData, tanggalSanggah: e.target.value })}
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Dokumen Bukti Sanggahan (PDF) *
+              </label>
+              <FormInput
+                type="text"
+                placeholder="Contoh: dokumen_bukti_sanggahan.pdf"
+                value={formData.fileDokumentasi}
+                onChange={(e) => setFormData({ ...formData, fileDokumentasi: e.target.value })}
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Substansi & Alasan Sanggahan *
+              </label>
+              <FormTextarea
+                rows={4}
+                placeholder="Jelaskan alasan sanggahan secara detail beserta pasal atau ketentuan KAK yang dilanggar..."
+                value={formData.alasanSanggah}
+                onChange={(e) => setFormData({ ...formData, alasanSanggah: e.target.value })}
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
+              <Button type="button" variant="outline-secondary" onClick={() => setShowSubmitModal(false)}>
+                Batal
+              </Button>
+              <Button type="submit" variant="primary" disabled={submitting}>
+                {submitting ? "Mengirimkan..." : "Kirim Sanggahan"}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Panel>
+      </Dialog>
+
+      {/* Modal Review & Balasan (Pokja / Admin) */}
+      <Dialog open={reviewModalOpen} onClose={() => setReviewModalOpen(false)} className="relative z-50">
+        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
+            <Dialog.Title className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Lucide icon="CheckSquare" className="w-5 h-5 text-primary" />
+              Keputusan & Balasan Sanggahan Pokja
+            </Dialog.Title>
+            <button onClick={() => setReviewModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <Lucide icon="X" className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleUpdateJawabanSanggahan} className="mt-5 space-y-4">
+            <div>
+              <div className="text-xs text-slate-500">Nomor Surat</div>
+              <div className="font-semibold text-slate-800 dark:text-white">{selectedSanggahan?.no_surat}</div>
+            </div>
+            <div>
+              <div className="text-xs text-slate-500">Alasan Sanggahan Vendor</div>
+              <div className="p-3 bg-slate-50 dark:bg-darkmode-700 rounded text-sm text-slate-700 dark:text-slate-200">
+                {selectedSanggahan?.alasan_sanggah}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Status Keputusan Pokja *
               </label>
               <FormSelect
-                name="vendorId"
-                value={formData.vendorId}
-                onChange={handleInputChange}
-                required
+                value={reviewStatus}
+                onChange={(e) => setReviewStatus(e.target.value)}
+                className="mt-1"
               >
-                <option value="">-- Pilih Vendor --</option>
-                {vendors && vendors.length > 0 && vendors.map((vendor) => (
-                  <option key={vendor?.idvendor} value={vendor?.idvendor}>
-                    {vendor?.name || "Nama Vendor Tidak Tersedia"}
-                  </option>
-                ))}
+                <option value="sedang_ditinjau">Sedang Ditinjau</option>
+                <option value="diterima">Diterima (Sanggahan Terbukti Benar)</option>
+                <option value="ditolak">Ditolak (Sanggahan Tidak Berdasar)</option>
               </FormSelect>
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                Nomor Surat Sanggahan
-              </label>
-              <FormInput
-                type="text"
-                name="noSurat"
-                value={formData.noSurat}
-                onChange={handleInputChange}
-                placeholder="Contoh: SG-001/2024"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
-                Alasan Sanggahan
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                Balasan Resmi Pokja Pemilihan *
               </label>
               <FormTextarea
-                name="alasanSanggah"
-                value={formData.alasanSanggah}
-                onChange={handleInputChange}
-                placeholder="Jelaskan alasan sanggahan secara detail..."
-                rows={5}
+                rows={4}
+                placeholder="Tuliskan penjelasan dan surat jawaban resmi Pokja kepada penyedia..."
+                value={jawabanSanggah}
+                onChange={(e) => setJawabanSanggah(e.target.value)}
                 required
+                className="mt-1"
               />
-              <FormHelp>Maksimal 2000 karakter</FormHelp>
             </div>
 
-            <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="outline-secondary"
-                onClick={() => setShowForm(false)}
-              >
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
+              <Button type="button" variant="outline-secondary" onClick={() => setReviewModalOpen(false)}>
                 Batal
               </Button>
-              <Button type="submit" variant="primary">
-                <Lucide icon="Save" className="w-4 h-4 mr-2" />
-                Simpan Sanggahan
+              <Button type="submit" variant="primary" disabled={submitting}>
+                {submitting ? "Menyimpan..." : "Simpan Keputusan"}
               </Button>
             </div>
-          </div>
-        </form>
-      )}
+          </form>
+        </Dialog.Panel>
+      </Dialog>
     </div>
-
-    {/* Daftar Sanggahan */}
-    <div>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Daftar Sanggahan
-      </h2>
-
-      <div className="overflow-auto">
-        <Table className="border-b border-slate-200/60">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Td className="w-5 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                <FormCheck.Input type="checkbox" />
-              </Table.Td>
-              <Table.Td className="w-5 py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                No
-              </Table.Td>
-              <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Vendor
-              </Table.Td>
-              <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                No. Surat
-              </Table.Td>
-              <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Tanggal
-              </Table.Td>
-              <Table.Td className="py-4 font-medium border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Status
-              </Table.Td>
-              <Table.Td className="w-20 py-4 font-medium text-center border-t bg-slate-50 border-slate-200/60 text-slate-500 dark:bg-darkmode-400">
-                Aksi
-              </Table.Td>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {sanggahanList.map((sanggahan, index) => (
-              <Table.Tr key={sanggahan.id} className="[&_td]:last:border-b-0">
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  <FormCheck.Input type="checkbox" />
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  {index + 1}
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  <div className="font-semibold text-gray-900 dark:text-white">
-                    {sanggahan.vendor?.name || "N/A"}
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    ID: {sanggahan.vendor?.idvendor || "N/A"}
-                  </div>
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 text-blue-700 dark:text-blue-400 font-mono">
-                  {sanggahan.noSurat}
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600 text-sm">
-                  {new Date(sanggahan.tanggalSanggah).toLocaleDateString("id-ID")}
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                      sanggahan.status
-                    )}`}
-                  >
-                    {getStatusLabel(sanggahan.status)}
-                  </span>
-                </Table.Td>
-                <Table.Td className="py-4 border-dashed dark:bg-darkmode-600">
-                  <div className="flex items-center justify-center">
-                    <Menu className="h-5">
-                      <Menu.Button className="w-5 h-5 text-slate-500">
-                        <Lucide
-                          icon="MoreVertical"
-                          className="w-5 h-5 stroke-slate-400/70 fill-slate-400/70"
-                        />
-                      </Menu.Button>
-                      <Menu.Items className="w-48">
-                        <Menu.Item>
-                          <Lucide icon="Eye" className="w-4 h-4 mr-2" />
-                          Lihat Detail
-                        </Menu.Item>
-                        <Menu.Item>
-                          <Lucide icon="Download" className="w-4 h-4 mr-2" />
-                          Unduh Dokumen
-                        </Menu.Item>
-                        <Menu.Item>
-                          <Lucide icon="CheckCircle" className="w-4 h-4 mr-2" />
-                          Terima
-                        </Menu.Item>
-                        <Menu.Item className="text-danger">
-                          <Lucide icon="XCircle" className="w-4 h-4 mr-2" />
-                          Tolak
-                        </Menu.Item>
-                      </Menu.Items>
-                    </Menu>
-                  </div>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
-      </div>
-
-      {sanggahanList.length === 0 && (
-        <div className="text-center py-8">
-          <Lucide icon="MessageSquare" className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">Tidak ada sanggahan</p>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {sanggahanList.length > 0 && (
-        <div className="flex flex-col-reverse flex-wrap items-center p-5 flex-reverse gap-y-2 sm:flex-row">
-          <Pagination className="flex-1 w-full mr-auto sm:w-auto">
-            <Pagination.Link>
-              <Lucide icon="ChevronsLeft" className="w-4 h-4" />
-            </Pagination.Link>
-            <Pagination.Link>
-              <Lucide icon="ChevronLeft" className="w-4 h-4" />
-            </Pagination.Link>
-            <Pagination.Link active>1</Pagination.Link>
-            <Pagination.Link>
-              <Lucide icon="ChevronRight" className="w-4 h-4" />
-            </Pagination.Link>
-            <Pagination.Link>
-              <Lucide icon="ChevronsRight" className="w-4 h-4" />
-            </Pagination.Link>
-          </Pagination>
-        </div>
-      )}
-    </div>
-  </div>
-);
+  );
+};
 
 export default MasaSanggahAction;

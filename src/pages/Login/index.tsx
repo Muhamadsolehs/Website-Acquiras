@@ -42,11 +42,15 @@ function Main() {
 
     try {
       const apiUrl =
-        import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+        import.meta.env.VITE_API_URL ||
+        import.meta.env.VITE_API_BASE_URL ||
+        "http://127.0.0.1:8000/api";
+
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           username: form.username,
@@ -75,14 +79,16 @@ function Main() {
             dispatch(setTheme("echo-navbar"));
             navigate("/dashboard");
           } else {
-            toast.error("Role tidak ditemukan!");
+            localStorage.setItem("theme", "echo");
+            dispatch(setTheme("echo"));
+            navigate("/dashboard");
           }
         }, 1000);
       } else {
         throw {
           response: {
             data: {
-              message: data.message || "Login Gagal",
+              message: data.message || "Login Gagal. Pastikan username dan password benar.",
               errors: data.errors || [],
             },
           },
@@ -103,9 +109,9 @@ function Main() {
         setShowGeneralError(true);
         toast.error(apiMessage);
       } else {
-        setError({ general: "Something went wrong!" });
+        setError({ general: "Koneksi ke backend gagal. Pastikan backend Laravel berjalan di port 8000." });
         setShowGeneralError(true);
-        toast.error("Something went wrong!");
+        toast.error("Gagal terhubung ke backend");
       }
 
       setForm((prev) => ({ ...prev, password: "" }));
@@ -269,15 +275,35 @@ function Main() {
                 <div className="mt-5 text-center xl:mt-8 xl:text-left">
                   <Button
                     onClick={handleLogin}
-                    // onClick= { () => {
-                    //   window.location.href = "/dashboard";
-                    // }}
                     variant="primary"
                     rounded
+                    disabled={loading}
                     className=" border-none w-full py-3.5 xl:mr-3 "
                   >
-                    Sign In
+                    {loading ? "Memproses..." : "Sign In"}
                   </Button>
+
+                  <div className="mt-6 pt-4 border-t border-slate-200 dark:border-darkmode-400">
+                    <div className="text-xs text-slate-500 mb-2 font-medium">Pilihan Akun Demo:</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setForm({ username: "admin", password: "password", rememberMe: true })}
+                        className="px-3 py-2 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-darkmode-400 rounded-lg text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-darkmode-300 text-left transition"
+                      >
+                        <div className="font-semibold text-primary">Admin Pokja</div>
+                        <div className="text-[10px] text-slate-500">admin / password</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ username: "vendor2", password: "password", rememberMe: true })}
+                        className="px-3 py-2 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-darkmode-400 rounded-lg text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-darkmode-300 text-left transition"
+                      >
+                        <div className="font-semibold text-success">Vendor Penyedia</div>
+                        <div className="text-[10px] text-slate-500">vendor2 / password</div>
+                      </button>
+                    </div>
+                  </div>
                   {/* <Button
                     as={Link}
                     to="/register"
