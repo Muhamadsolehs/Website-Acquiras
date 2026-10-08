@@ -63,7 +63,7 @@ function Main() {
                       </div>
                       <div
                         className="cursor-pointer"
-                        onClick={() => navigate("/profile")}
+                        onClick={() => navigate("/dashboard/profile")}
                       >
                         <div className="col-span-4 sm:col-span-2 xl:col-span-1 flex flex-col items-center justify-center p-5 border relative rounded-[0.6rem] bg-slate-50/50 overflow-hidden dark:bg-darkmode-400">
                           <div className="flex items-center justify-center w-48 h-48 border rounded-full border-primary/10 bg-primary/10">

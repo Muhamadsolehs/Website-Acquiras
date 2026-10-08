@@ -1,4 +1,4 @@
-import { useRoutes } from "react-router-dom";
+import { useRoutes, Navigate } from "react-router-dom";
 
 import Dashboard from "../pages/Dashboard";
 
@@ -224,6 +224,10 @@ function Router() {
           element: <Profile />,
         },
       ],
+    },
+    {
+      path: "/profile",
+      element: <Navigate to="/dashboard/profile" replace />,
     },
   ];
 

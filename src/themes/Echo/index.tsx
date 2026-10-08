@@ -518,7 +518,7 @@ function Main() {
                   <Menu.Items className="w-56 mt-1">
                     <Menu.Item
                       onClick={() => {
-                        navigate("profile");
+                        navigate("/dashboard/profile");
                       }}
                     >
                       <Lucide icon="Users" className="w-4 h-4 mr-2" />
