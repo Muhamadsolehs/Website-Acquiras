@@ -22,6 +22,8 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 import ActivitiesPanel from "@/components/ActivitiesPanel";
 import logo from "@/assets/images/logo/acquiras.png";
 import profile from "@/assets/images/avatar/person_1.png";
+import LogoutConfirmModal from "@/components/LogoutConfirmModal";
+import { toast } from "sonner";
 
 function Main() {
   const dispatch = useAppDispatch();
@@ -87,7 +89,11 @@ function Main() {
     }
   };
 
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
   const handleLogout = async () => {
+    setLoggingOut(true);
     try {
       const apiUrl =
         import.meta.env.VITE_API_URL ||
@@ -111,6 +117,9 @@ function Main() {
       localStorage.removeItem("eproc_user_role");
       localStorage.removeItem("theme");
 
+      setLoggingOut(false);
+      setLogoutModalOpen(false);
+      toast.success("Berhasil keluar dari akun.");
       navigate("/login");
     }
   };
@@ -524,7 +533,7 @@ function Main() {
                       <Lucide icon="Users" className="w-4 h-4 mr-2" />
                       Profil
                     </Menu.Item>
-                    <Menu.Item onClick={handleLogout}>
+                    <Menu.Item onClick={() => setLogoutModalOpen(true)}>
                       <Lucide icon="Power" className="w-4 h-4 mr-2" />
                       Keluar
                     </Menu.Item>
@@ -562,6 +571,12 @@ function Main() {
           </div>
         </div>
       </div>
+      <LogoutConfirmModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        loading={loggingOut}
+      />
     </div>
   );
 }

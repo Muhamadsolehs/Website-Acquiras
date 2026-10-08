@@ -14,6 +14,7 @@ import clsx from "clsx";
 import api from "@/api/axiosinstance";
 import { toast } from "sonner";
 import defaultAvatar from "@/assets/images/avatar/person_1.png";
+import LogoutConfirmModal from "@/components/LogoutConfirmModal";
 
 function Main() {
     const navigate = useNavigate();
@@ -83,6 +84,10 @@ function Main() {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
+
+    // Logout Confirmation State
+    const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
 
     // Sinkronisasi Tab dengan URL
     useEffect(() => {
@@ -382,6 +387,7 @@ function Main() {
 
     // Logout
     const handleLogout = async () => {
+        setLoggingOut(true);
         try {
             await api.post("/auth/logout");
         } catch (err) {
@@ -390,6 +396,8 @@ function Main() {
             localStorage.removeItem("eproc_user");
             localStorage.removeItem("eproc_user_role");
             localStorage.removeItem("theme");
+            setLoggingOut(false);
+            setLogoutModalOpen(false);
             toast.success("Berhasil keluar.");
             navigate("/login");
         }
@@ -405,7 +413,7 @@ function Main() {
                     <div className="flex flex-col sm:flex-row gap-x-3 gap-y-2 md:ml-auto">
                         <Button
                             variant="primary"
-                            onClick={handleLogout}
+                            onClick={() => setLogoutModalOpen(true)}
                             className="bg-danger/80 hover:bg-danger text-white border-transparent"
                         >
                             <Lucide
@@ -1275,6 +1283,14 @@ function Main() {
                     </div>
                 </Dialog.Panel>
             </Dialog>
+
+            {/* Modal Dialog Konfirmasi Logout */}
+            <LogoutConfirmModal
+                open={logoutModalOpen}
+                onClose={() => setLogoutModalOpen(false)}
+                onConfirm={handleLogout}
+                loading={loggingOut}
+            />
         </div>
     );
 }

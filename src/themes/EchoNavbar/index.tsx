@@ -18,6 +18,8 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 import logo from "@/assets/images/logo/acquiras.png";
 import useLogout from "@/hooks/useLogout";
 import profile from "@/assets/images/avatar/person_1.png";
+import LogoutConfirmModal from "@/components/LogoutConfirmModal";
+import { toast } from "sonner";
 
 function NavItem({
   menu,
@@ -133,7 +135,11 @@ function NavItem({
 }
 
 function Main() {
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
   const handleLogout = async () => {
+    setLoggingOut(true);
     try {
       const apiUrl =
         import.meta.env.VITE_API_URL ||
@@ -157,6 +163,9 @@ function Main() {
       localStorage.removeItem("eproc_user_role");
       localStorage.removeItem("theme");
 
+      setLoggingOut(false);
+      setLogoutModalOpen(false);
+      toast.success("Berhasil keluar dari akun.");
       navigate("/login");
     }
   };
@@ -242,7 +251,7 @@ function Main() {
                   Profil
                 </Menu.Item>
                 <Menu.Item
-                  onClick={handleLogout}
+                  onClick={() => setLogoutModalOpen(true)}
                   className="flex cursor-pointer items-center px-4 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-darkmode-600"
                 >
                   <Lucide icon="Power" className="mr-2 h-4 w-4" />
@@ -298,6 +307,12 @@ function Main() {
       <NotificationsPanel
         notificationsPanel={notificationsPanel}
         setNotificationsPanel={setNotificationsPanel}
+      />
+      <LogoutConfirmModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        loading={loggingOut}
       />
     </div>
   );
