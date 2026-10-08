@@ -38,6 +38,10 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::put('/auth/update', [AuthController::class, 'updateProfile']); // alias
+    Route::put('/auth/change-password', [AuthController::class, 'changePassword']);
+    Route::delete('/auth/delete-account', [AuthController::class, 'deleteAccount']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 });
 // Fallback non-middleware untuk convenience jika token manual via header

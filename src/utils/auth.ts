@@ -1,6 +1,6 @@
 export const fetchUserInfo = async () => {
   try {
-    const userStr = localStorage.getItem("user");
+    const userStr = localStorage.getItem("eproc_user") || localStorage.getItem("user");
 
     if (!userStr) {
       return null;

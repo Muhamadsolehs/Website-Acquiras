@@ -198,6 +198,89 @@ class AuthController extends Controller
     }
 
     /**
+     * Update profil pengguna
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $validated = $request->validate([
+            'first_name' => 'nullable|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'email' => 'required|email|max:150|unique:users,email,' . $user->id,
+            'photo' => 'nullable|string',
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'message' => 'Profil berhasil diperbarui',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'role' => (string) $user->role_id,
+                'role_name' => $user->role ? $user->role->name : ($user->role_id == 1 ? 'Admin' : 'Vendor'),
+                'vendor' => $user->vendor,
+                'photo' => $user->photo,
+            ]
+        ]);
+    }
+
+    /**
+     * Ganti kata sandi
+     */
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8',
+        ]);
+
+        if (!Hash::check($request->current_password, $user->password_hash)) {
+            return response()->json([
+                'message' => 'Kata sandi saat ini tidak sesuai.'
+            ], 422);
+        }
+
+        $user->update([
+            'password_hash' => Hash::make($request->new_password)
+        ]);
+
+        return response()->json([
+            'message' => 'Kata sandi berhasil diubah.'
+        ]);
+    }
+
+    /**
+     * Hapus / Nonaktifkan akun
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $user->update(['is_active' => false]);
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Akun Anda telah dinonaktifkan.'
+        ]);
+    }
+
+    /**
      * Logout user
      */
     public function logout(Request $request)

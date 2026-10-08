@@ -1,482 +1,759 @@
 import Lucide from "@/components/Base/Lucide";
-import TomSelect from "@/components/Base/TomSelect";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-    FormLabel,
     FormCheck,
     FormInput,
-    FormSelect,
-    FormSwitch,
     FormHelp,
 } from "@/components/Base/Form";
-import Alert from "@/components/Base/Alert";
-import Tippy from "@/components/Base/Tippy";
-import users from "@/fakers/users";
-import countries from "@/fakers/countries";
-import languages from "@/fakers/languages";
-import timezones from "@/fakers/timezones";
-import recentDevices from "@/fakers/recent-devices";
 import Button from "@/components/Base/Button";
-import Litepicker from "@/components/Base/Litepicker";
-import Table from "@/components/Base/Table";
+import { Dialog } from "@/components/Base/Headless";
 import React, { useEffect, useState } from "react";
 import clsx from "clsx";
-import _, { first, set } from "lodash";
-import { fetchUserInfo } from "@/utils/auth";
-import useLogout from "@/hooks/useLogout";
-import { useAuth } from "@/context/AuthContext";
+import api from "@/api/axiosinstance";
 import { toast } from "sonner";
-import profile from "@/assets/images/avatar/person_1.png";
-
-interface User {
-    family_name: string,
-    given_name: string,
-    email: string,
-}
+import defaultAvatar from "@/assets/images/avatar/person_1.png";
 
 function Main() {
-    const { updateUser } = useAuth();
-    const { logout } = useLogout();
-    const [profileImage, setProfileImage] = useState(profile);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialPage = queryParams.get("page") || "profile";
+    const [activeTab, setActiveTab] = useState(initialPage);
+
+    // Profile State
+    const [profileImage, setProfileImage] = useState<string>(defaultAvatar);
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [loadingData, setLoadingData] = useState(true);
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const [form, setForm] = useState({
         firstName: "",
         lastName: "",
         email: "",
-    })
+        username: "",
+        role_name: "",
+    });
 
-    const { search } = useLocation();
-    const queryParams = new URLSearchParams(search);
+    // Password State
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+    });
+    const [savingPassword, setSavingPassword] = useState(false);
 
+    // 2FA State
+    const [twoFactorEnabled, setTwoFactorEnabled] = useState<boolean>(() => {
+        return localStorage.getItem("eproc_2fa") === "true";
+    });
+    const [twoFactorPassword, setTwoFactorPassword] = useState("");
+    const [saving2FA, setSaving2FA] = useState(false);
 
-    const handleChange = (e: any) => {
-        const { name, value } = e.target
+    // Account Deactivation State
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [deletingAccount, setDeletingAccount] = useState(false);
+
+    // Sinkronisasi Tab dengan URL
+    useEffect(() => {
+        const page = queryParams.get("page") || "profile";
+        setActiveTab(page);
+    }, [location.search]);
+
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        const search = tab === "profile" ? "" : `?page=${tab}`;
+        navigate(`${location.pathname}${search}`, { replace: true });
+    };
+
+    // Muat data user
+    const loadUserData = async () => {
+        setLoadingData(true);
+        try {
+            // Ambil dari API /auth/me
+            const res = await api.get("/auth/me");
+            const data = res.data;
+            setCurrentUser(data);
+            setForm({
+                firstName: data.first_name || "",
+                lastName: data.last_name || "",
+                email: data.email || "",
+                username: data.username || "",
+                role_name: data.role_name || (data.role === "1" ? "Admin" : "Vendor"),
+            });
+            if (data.photo) {
+                setProfileImage(data.photo);
+            }
+            // Simpan sinkronisasi ke eproc_user
+            localStorage.setItem("eproc_user", JSON.stringify(data));
+        } catch (err) {
+            // Fallback ke localStorage
+            const userStr = localStorage.getItem("eproc_user") || localStorage.getItem("user");
+            if (userStr) {
+                try {
+                    const data = JSON.parse(userStr);
+                    setCurrentUser(data);
+                    setForm({
+                        firstName: data.first_name || "",
+                        lastName: data.last_name || "",
+                        email: data.email || "",
+                        username: data.username || "",
+                        role_name: data.role_name || (data.role === "1" ? "Admin" : "Vendor"),
+                    });
+                    if (data.photo) {
+                        setProfileImage(data.photo);
+                    }
+                } catch (e) {}
+            }
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    useEffect(() => {
+        loadUserData();
+    }, []);
+
+    // Ganti input profil
+    const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
+    // Upload & ganti foto profil
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                toast.error("Ukuran foto maksimal 2MB.");
+                return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
-                setProfileImage(reader.result as string);
+                const base64 = reader.result as string;
+                setProfileImage(base64);
+                toast.info("Foto profil dipilih. Klik 'Simpan' untuk menyimpan perubahan.");
             };
             reader.readAsDataURL(file);
         }
     };
 
-    useEffect(() => {
-        (async () => {
-            try {
-                const data = await fetchUserInfo();
-                setForm({
-                    firstName: data.given_name || "",
-                    lastName: data.family_name || "",
-                    email: data.email || "",
-                });
-            } catch (err) {
-                console.error("Failed to fetch user info:", err);
-            }
-        })();
-    }, []);
-
-    const handleSumbit = async (e: React.FormEvent) => {
+    // Submit simpan profil
+    const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSavingProfile(true);
 
         try {
-            await updateUser(form)
-            console.log(form)
-            toast.success("Berhasil", {
-                description: "Data anda berhasil diupdate.",
+            const res = await api.put("/auth/profile", {
+                first_name: form.firstName,
+                last_name: form.lastName,
+                email: form.email,
+                photo: profileImage,
+            });
+
+            if (res.data?.user) {
+                localStorage.setItem("eproc_user", JSON.stringify(res.data.user));
+            }
+
+            toast.success("Berhasil!", {
+                description: "Informasi profil Anda telah berhasil diperbarui.",
                 icon: <Lucide icon="CheckCircle2" className="w-5 h-5 text-success" />,
             });
-        } catch (err) {
+        } catch (err: any) {
+            console.error("Gagal update profil:", err);
             toast.error("Gagal!", {
-                description: "Data anda gagal diupdate.",
+                description: err.response?.data?.message || "Data profil gagal diperbarui.",
                 icon: <Lucide icon="AlertTriangle" className="w-5 h-5 text-danger" />,
             });
-            console.log(err);
+        } finally {
+            setSavingProfile(false);
         }
-    }
+    };
 
+    // Submit ganti password
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!passwordForm.currentPassword) {
+            toast.error("Kata sandi saat ini harus diisi.");
+            return;
+        }
+
+        if (passwordForm.newPassword.length < 8) {
+            toast.error("Kata sandi baru minimal 8 karakter.");
+            return;
+        }
+
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            toast.error("Konfirmasi kata sandi tidak cocok dengan kata sandi baru.");
+            return;
+        }
+
+        setSavingPassword(true);
+        try {
+            const res = await api.put("/auth/change-password", {
+                current_password: passwordForm.currentPassword,
+                new_password: passwordForm.newPassword,
+            });
+
+            toast.success("Berhasil!", {
+                description: res.data?.message || "Kata sandi Anda berhasil diubah.",
+                icon: <Lucide icon="CheckCircle2" className="w-5 h-5 text-success" />,
+            });
+
+            setPasswordForm({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+            });
+        } catch (err: any) {
+            console.error("Gagal ubah kata sandi:", err);
+            toast.error("Gagal!", {
+                description: err.response?.data?.message || "Gagal mengubah kata sandi.",
+                icon: <Lucide icon="AlertTriangle" className="w-5 h-5 text-danger" />,
+            });
+        } finally {
+            setSavingPassword(false);
+        }
+    };
+
+    // Submit Toggle 2FA
+    const handleToggle2FA = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!twoFactorPassword) {
+            toast.error("Masukkan kata sandi Anda untuk verifikasi perubahan 2FA.");
+            return;
+        }
+
+        setSaving2FA(true);
+        try {
+            // Simulasi verifikasi status 2FA
+            const nextStatus = !twoFactorEnabled;
+            setTwoFactorEnabled(nextStatus);
+            localStorage.setItem("eproc_2fa", nextStatus ? "true" : "false");
+
+            toast.success("Berhasil!", {
+                description: nextStatus
+                    ? "Autentikasi Dua Faktor (2FA) telah berhasil diaktifkan."
+                    : "Autentikasi Dua Faktor (2FA) telah dinonaktifkan.",
+                icon: <Lucide icon="CheckCircle2" className="w-5 h-5 text-success" />,
+            });
+
+            setTwoFactorPassword("");
+        } catch (err: any) {
+            toast.error("Gagal memperbarui status 2FA.");
+        } finally {
+            setSaving2FA(false);
+        }
+    };
+
+    // Submit Deaktivasi Akun
+    const handleDeleteAccount = async () => {
+        setDeletingAccount(true);
+        try {
+            await api.delete("/auth/delete-account");
+
+            toast.success("Akun Dinonaktifkan", {
+                description: "Akun Anda telah dinonaktifkan. Anda akan dialihkan ke halaman login.",
+            });
+
+            localStorage.removeItem("eproc_token");
+            localStorage.removeItem("eproc_user");
+            localStorage.removeItem("eproc_user_role");
+            localStorage.removeItem("theme");
+
+            setTimeout(() => {
+                navigate("/login");
+            }, 1200);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "Gagal menonaktifkan akun.");
+        } finally {
+            setDeletingAccount(false);
+            setDeleteModalOpen(false);
+        }
+    };
+
+    // Logout
+    const handleLogout = async () => {
+        try {
+            await api.post("/auth/logout");
+        } catch (err) {
+        } finally {
+            localStorage.removeItem("eproc_token");
+            localStorage.removeItem("eproc_user");
+            localStorage.removeItem("eproc_user_role");
+            localStorage.removeItem("theme");
+            toast.success("Berhasil keluar.");
+            navigate("/login");
+        }
+    };
 
     return (
         <div className="grid grid-cols-12 gap-y-10 gap-x-6">
             <div className="col-span-12">
                 <div className="flex flex-col md:h-10 gap-y-3 md:items-center md:flex-row">
-                    <div className="text-base font-medium group-[.mode--light]:text-white">
-                        Pengaturan
+                    <div className="text-base font-medium text-slate-800 dark:text-white">
+                        Pengaturan Profil & Keamanan
                     </div>
                     <div className="flex flex-col sm:flex-row gap-x-3 gap-y-2 md:ml-auto">
                         <Button
                             variant="primary"
-                            className="group-[.mode--light]:!bg-white/[0.12] group-[.mode--light]:!text-slate-200 group-[.mode--light]:!border-transparent dark:group-[.mode--light]:!bg-darkmode-900/30 dark:!box"
+                            onClick={handleLogout}
+                            className="bg-danger/80 hover:bg-danger text-white border-transparent"
                         >
                             <Lucide
-                                onClick={logout}
-                                icon="ExternalLink"
-                                className="stroke-[1.3] w-4 h-4 mr-3"
-                            />{" "}
+                                icon="LogOut"
+                                className="stroke-[1.3] w-4 h-4 mr-2"
+                            />
                             Keluar
                         </Button>
                     </div>
                 </div>
+
                 <div className="mt-3.5 grid grid-cols-12 gap-y-10 gap-x-6">
+                    {/* Sidebar Navigasi Menu Pengaturan */}
                     <div className="relative col-span-12 xl:col-span-3">
                         <div className="sticky top-[104px]">
-                            <div className="flex flex-col px-5 pt-5 pb-6 box box--stacked">
-                                <Link
-                                    to="/profile"
+                            <div className="flex flex-col px-5 pt-5 pb-6 box box--stacked bg-white dark:bg-darkmode-600 rounded-lg shadow-sm border border-slate-200/60 dark:border-darkmode-400">
+                                <button
+                                    type="button"
+                                    onClick={() => handleTabChange("profile")}
                                     className={clsx([
-                                        "flex items-center py-3 first:-mt-3 last:-mb-3 [&.active]:text-primary [&.active]:font-medium hover:text-primary",
-                                        { active: queryParams.get("page") === null },
+                                        "flex items-center py-3 px-3 rounded-md transition-colors text-left",
+                                        activeTab === "profile"
+                                            ? "bg-primary/10 text-primary font-semibold"
+                                            : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-darkmode-400 hover:text-primary",
                                     ])}
                                 >
                                     <Lucide
-                                        icon="AppWindow"
-                                        className="stroke-[1.3] w-4 h-4 mr-3"
-                                    />{" "}
+                                        icon="UserRound"
+                                        className="stroke-[1.5] w-4 h-4 mr-3"
+                                    />
                                     Informasi Profil
-                                </Link>
-                                <Link
-                                    to="/profile?page=security"
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleTabChange("security")}
                                     className={clsx([
-                                        "flex items-center py-3 first:-mt-3 last:-mb-3 [&.active]:text-primary [&.active]:font-medium hover:text-primary",
-                                        { active: queryParams.get("page") === "security" },
+                                        "flex items-center py-3 px-3 rounded-md transition-colors text-left mt-1",
+                                        activeTab === "security"
+                                            ? "bg-primary/10 text-primary font-semibold"
+                                            : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-darkmode-400 hover:text-primary",
                                     ])}
                                 >
                                     <Lucide
                                         icon="KeyRound"
-                                        className="stroke-[1.3] w-4 h-4 mr-3"
-                                    />{" "}
+                                        className="stroke-[1.5] w-4 h-4 mr-3"
+                                    />
                                     Keamanan
-                                </Link>
-                                <Link
-                                    to="/profile?page=two-factor-authentication"
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleTabChange("two-factor-authentication")}
                                     className={clsx([
-                                        "flex items-center py-3 first:-mt-3 last:-mb-3 [&.active]:text-primary [&.active]:font-medium hover:text-primary",
-                                        {
-                                            active:
-                                                queryParams.get("page") === "two-factor-authentication",
-                                        },
+                                        "flex items-center py-3 px-3 rounded-md transition-colors text-left mt-1",
+                                        activeTab === "two-factor-authentication"
+                                            ? "bg-primary/10 text-primary font-semibold"
+                                            : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-darkmode-400 hover:text-primary",
                                     ])}
                                 >
                                     <Lucide
                                         icon="ShieldCheck"
-                                        className="stroke-[1.3] w-4 h-4 mr-3"
-                                    />{" "}
+                                        className="stroke-[1.5] w-4 h-4 mr-3"
+                                    />
                                     2FA Autentikasi
-                                </Link>
-                                <Link
-                                    to="/profile?page=account-deactivation"
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleTabChange("account-deactivation")}
                                     className={clsx([
-                                        "flex items-center py-3 first:-mt-3 last:-mb-3 [&.active]:text-primary [&.active]:font-medium hover:text-primary",
-                                        {
-                                            active:
-                                                queryParams.get("page") === "account-deactivation",
-                                        },
+                                        "flex items-center py-3 px-3 rounded-md transition-colors text-left mt-1",
+                                        activeTab === "account-deactivation"
+                                            ? "bg-danger/10 text-danger font-semibold"
+                                            : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-darkmode-400 hover:text-danger",
                                     ])}
                                 >
-                                    <Lucide icon="Trash2" className="stroke-[1.3] w-4 h-4 mr-3" />{" "}
+                                    <Lucide
+                                        icon="Trash2"
+                                        className="stroke-[1.5] w-4 h-4 mr-3"
+                                    />
                                     Hapus Akun
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     </div>
+
+                    {/* Area Konten */}
                     <div className="flex flex-col col-span-12 xl:col-span-9 gap-y-7">
-                        <div className="p-1.5 box flex flex-col box--stacked">
-                            <div className="h-60 relative w-full rounded-[0.6rem] bg-gradient-to-b from-theme-1/95 to-theme-2/95">
-                                <div
-                                    className={clsx([
-                                        "w-full h-full relative overflow-hidden",
-                                        "before:content-[''] before:absolute before:inset-0 before:bg-texture-white before:-mt-[50rem]",
-                                        "after:content-[''] after:absolute after:inset-0 after:bg-texture-white after:-mt-[50rem]",
-                                    ])}
-                                ></div>
-                                <div className="absolute inset-x-0 top-0 w-32 h-32 mx-auto mt-36">
-                                    <div className="w-full h-full overflow-hidden border-[6px] box border-white rounded-full image-fit">
+                        {/* Banner & Avatar Foto */}
+                        <div className="p-1.5 box flex flex-col box--stacked bg-white dark:bg-darkmode-600 rounded-lg shadow-sm border border-slate-200/60 dark:border-darkmode-400">
+                            <div className="h-48 sm:h-56 relative w-full rounded-[0.6rem] bg-gradient-to-r from-blue-600 via-sky-500 to-amber-400">
+                                <div className="absolute inset-x-0 bottom-0 flex justify-center translate-y-1/2">
+                                    <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white dark:border-darkmode-600 shadow-lg overflow-hidden bg-white">
                                         <img
-                                            alt="Tailwise - Admin Dashboard Template"
+                                            alt="Foto Profil"
                                             src={profileImage}
+                                            className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="absolute bottom-0 right-0 w-5 h-5 mb-2.5 mr-2.5 border-2 border-white rounded-full bg-success box"></div>
                                 </div>
                             </div>
-                            <div className="p-5 flex flex-col sm:flex-row gap-y-3 sm:items-end rounded-[0.6rem] bg-slate-50 pt-12 dark:bg-darkmode-500">
+                            <div className="p-5 flex flex-col sm:flex-row gap-y-3 items-center sm:items-end justify-between pt-16 sm:pt-14 bg-slate-50/50 dark:bg-darkmode-700/50 rounded-b-lg">
+                                <div className="text-center sm:text-left">
+                                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">
+                                        {form.firstName ? `${form.firstName} ${form.lastName}` : (form.username || "Pengguna")}
+                                    </h3>
+                                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-0.5">
+                                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                            {form.role_name || "Pengguna"}
+                                        </span>
+                                        <span className="text-xs text-slate-500 font-mono">
+                                            @{form.username || "user"}
+                                        </span>
+                                    </div>
+                                </div>
                                 <Button
                                     variant="outline-primary"
-                                    className="sm:ml-auto border-primary/50 relative overflow-hidden "
+                                    className="border-primary/50 relative overflow-hidden text-xs sm:text-sm"
                                 >
-
                                     <Lucide
                                         icon="Image"
-                                        className="stroke-[1.3] w-4 h-4 mr-2.5 "
-                                    />{" "}
-
-                                    <span>
-                                        Ganti Foto
-                                    </span>
-
-
+                                        className="stroke-[1.3] w-4 h-4 mr-2"
+                                    />
+                                    <span>Ganti Foto</span>
                                     <FormInput
-                                        id="horizontal-form-1"
+                                        id="upload-profile-photo"
                                         type="file"
                                         onChange={handleFileChange}
                                         accept="image/*"
                                         name="profile"
                                         className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                                     />
-
-
                                 </Button>
                             </div>
                         </div>
-                        {queryParams.get("page") === null && (
-                            <form onSubmit={handleSumbit}>
-                                <div className="flex flex-col p-5 box box--stacked">
-                                    <div className="pb-5 mb-6 font-medium border-b border-dashed border-slate-300/70 text-[0.94rem]">
-                                        Informasi Umum
+
+                        {/* TAB 1: INFORMASI PROFIL */}
+                        {activeTab === "profile" && (
+                            <form onSubmit={handleSaveProfile}>
+                                <div className="flex flex-col p-6 box box--stacked bg-white dark:bg-darkmode-600 rounded-lg shadow-sm border border-slate-200/60 dark:border-darkmode-400">
+                                    <div className="pb-4 mb-6 font-bold text-slate-800 dark:text-white border-b border-dashed border-slate-200 dark:border-darkmode-400 text-base flex items-center justify-between">
+                                        <span>Informasi Umum</span>
+                                        <span className="text-xs font-normal text-slate-400">
+                                            Perbarui data identitas Anda
+                                        </span>
                                     </div>
-                                    <div>
-                                        <div className="flex-col block pt-5 mt-5 xl:items-center sm:flex xl:flex-row first:mt-0 first:pt-0">
-                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 sm:text-right xl:w-60 xl:mr-14">
+
+                                    <div className="space-y-5">
+                                        {/* Nama Depan & Belakang */}
+                                        <div className="flex-col block sm:flex xl:flex-row xl:items-center">
+                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 xl:w-60 xl:mr-10">
                                                 <div className="text-left">
                                                     <div className="flex items-center">
-                                                        <div className="font-medium">Nama Lengkap</div>
-                                                        <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-darkmode-300 dark:text-slate-400 text-xs rounded-md border border-slate-200">
+                                                        <div className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Nama Lengkap</div>
+                                                        <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded border border-slate-200 dark:bg-darkmode-700 dark:border-darkmode-500">
                                                             Harus diisi
                                                         </div>
                                                     </div>
-                                                    <div className="mt-1.5 xl:mt-3 text-xs leading-relaxed text-slate-500/80 dark:text-slate-400">
-                                                        Contoh: John Doe
+                                                    <div className="mt-1 text-xs text-slate-500">
+                                                        Nama depan dan belakang Anda
                                                     </div>
                                                 </div>
                                             </label>
-                                            <div className="flex-1 w-full mt-3 xl:mt-0">
-                                                <div className="flex flex-col items-center md:flex-row">
+                                            <div className="flex-1 w-full mt-2 xl:mt-0">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <FormInput
                                                         value={form.firstName}
                                                         name="firstName"
-                                                        onChange={handleChange}
+                                                        onChange={handleProfileChange}
                                                         type="text"
-                                                        className="first:rounded-b-none first:md:rounded-bl-md first:md:rounded-r-none [&:not(:first-child):not(:last-child)]:-mt-px [&:not(:first-child):not(:last-child)]:md:mt-0 [&:not(:first-child):not(:last-child)]:md:-ml-px [&:not(:first-child):not(:last-child)]:rounded-none last:rounded-t-none last:md:rounded-l-none last:md:rounded-tr-md last:-mt-px last:md:mt-0 last:md:-ml-px focus:z-10"
-                                                        placeholder="John"
+                                                        placeholder="Nama Depan (Contoh: Ahmad)"
+                                                        required
                                                     />
                                                     <FormInput
                                                         value={form.lastName}
                                                         name="lastName"
-                                                        onChange={handleChange}
+                                                        onChange={handleProfileChange}
                                                         type="text"
-                                                        className="first:rounded-b-none first:md:rounded-bl-md first:md:rounded-r-none [&:not(:first-child):not(:last-child)]:-mt-px [&:not(:first-child):not(:last-child)]:md:mt-0 [&:not(:first-child):not(:last-child)]:md:-ml-px [&:not(:first-child):not(:last-child)]:rounded-none last:rounded-t-none last:md:rounded-l-none last:md:rounded-tr-md last:-mt-px last:md:mt-0 last:md:-ml-px focus:z-10"
-                                                        placeholder="Smith"
+                                                        placeholder="Nama Belakang (Contoh: Fauzi)"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex-col block pt-5 mt-5 xl:items-center sm:flex xl:flex-row first:mt-0 first:pt-0">
-                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 sm:text-right xl:w-60 xl:mr-14">
+
+                                        {/* Username (Readonly) */}
+                                        <div className="flex-col block sm:flex xl:flex-row xl:items-center">
+                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 xl:w-60 xl:mr-10">
                                                 <div className="text-left">
-                                                    <div className="flex items-center">
-                                                        <div className="font-medium">Email</div>
-                                                        <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-darkmode-300 dark:text-slate-400 text-xs rounded-md border border-slate-200">
-                                                            Harus diisi
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-1.5 xl:mt-3 text-xs leading-relaxed text-slate-500/80 dark:text-slate-400">
-                                                        Contoh: 8B4YX@example.com
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Username</div>
+                                                    <div className="mt-1 text-xs text-slate-500">
+                                                        ID Pengguna untuk login
                                                     </div>
                                                 </div>
                                             </label>
-                                            <div className="flex-1 w-full mt-3 xl:mt-0">
+                                            <div className="flex-1 w-full mt-2 xl:mt-0">
                                                 <FormInput
                                                     type="text"
-                                                    className="form-control"
-                                                    placeholder="Email"
+                                                    value={form.username}
+                                                    disabled
+                                                    className="bg-slate-100 dark:bg-darkmode-700 cursor-not-allowed text-slate-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Email */}
+                                        <div className="flex-col block sm:flex xl:flex-row xl:items-center">
+                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 xl:w-60 xl:mr-10">
+                                                <div className="text-left">
+                                                    <div className="flex items-center">
+                                                        <div className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Alamat Email</div>
+                                                        <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded border border-slate-200 dark:bg-darkmode-700 dark:border-darkmode-500">
+                                                            Harus diisi
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-1 text-xs text-slate-500">
+                                                        Email resmi untuk notifikasi
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <div className="flex-1 w-full mt-2 xl:mt-0">
+                                                <FormInput
+                                                    type="email"
+                                                    placeholder="nama@email.com"
                                                     value={form.email}
                                                     name="email"
-                                                    onChange={handleChange}
+                                                    onChange={handleProfileChange}
+                                                    required
                                                 />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex pt-5 mt-6 border-t border-dashed md:justify-end border-slate-300/70">
+
+                                    <div className="flex pt-5 mt-6 border-t border-dashed border-slate-200 dark:border-darkmode-400 justify-end">
                                         <Button
                                             type="submit"
-                                            variant="outline-primary"
-                                            className="w-full px-4 border-primary/50 md:w-auto"
+                                            variant="primary"
+                                            disabled={savingProfile}
+                                            className="px-6"
                                         >
-                                            Simpan
+                                            <Lucide icon="Save" className="w-4 h-4 mr-2" />
+                                            {savingProfile ? "Menyimpan..." : "Simpan Perubahan"}
                                         </Button>
                                     </div>
                                 </div>
                             </form>
                         )}
-                        {queryParams.get("page") === "security" && (
-                            <div className="flex flex-col p-5 box box--stacked">
-                                <div className="pb-5 mb-6 font-medium border-b border-dashed border-slate-300/70 text-[0.94rem]">
-                                    Keamanan
-                                </div>
-                                <div>
-                                    <div className="flex-col block pt-5 mt-5 xl:items-center sm:flex xl:flex-row first:mt-0 first:pt-0">
-                                        <label className="inline-block mb-2 sm:mb-0 sm:mr-5 sm:text-right xl:w-64 xl:mr-14">
-                                            <div className="text-left">
-                                                <div className="flex items-center">
-                                                    <div className="font-medium">Kata Sandi Lama</div>
-                                                    <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-darkmode-300 dark:text-slate-400 text-xs rounded-md border border-slate-200">
-                                                        Harus diisi
-                                                    </div>
-                                                </div>
-                                                <div className="mt-1.5 xl:mt-3 text-xs leading-relaxed text-slate-500/80 dark:text-slate-400">
-                                                    Masukkan kata sandi Anda saat ini.
-                                                </div>
-                                            </div>
-                                        </label>
-                                        <div className="flex-1 w-full mt-3 xl:mt-0">
-                                            <FormInput type="text" placeholder="P**********d" />
-                                        </div>
+
+                        {/* TAB 2: KEAMANAN (GANTI PASSWORD) */}
+                        {activeTab === "security" && (
+                            <form onSubmit={handleChangePassword}>
+                                <div className="flex flex-col p-6 box box--stacked bg-white dark:bg-darkmode-600 rounded-lg shadow-sm border border-slate-200/60 dark:border-darkmode-400">
+                                    <div className="pb-4 mb-6 font-bold text-slate-800 dark:text-white border-b border-dashed border-slate-200 dark:border-darkmode-400 text-base flex items-center justify-between">
+                                        <span>Pengaturan Kata Sandi</span>
+                                        <span className="text-xs font-normal text-slate-400">
+                                            Perbarui kata sandi secara berkala
+                                        </span>
                                     </div>
-                                    <div className="flex-col block pt-5 mt-5 xl:items-center sm:flex xl:flex-row first:mt-0 first:pt-0">
-                                        <label className="inline-block mb-2 sm:mb-0 sm:mr-5 sm:text-right xl:w-64 xl:mr-14">
-                                            <div className="text-left">
-                                                <div className="flex items-center">
-                                                    <div className="font-medium">Kata Sandi Baru</div>
-                                                    <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-darkmode-300 dark:text-slate-400 text-xs rounded-md border border-slate-200">
-                                                        Harus diisi
+
+                                    <div className="space-y-5">
+                                        {/* Kata Sandi Lama */}
+                                        <div className="flex-col block sm:flex xl:flex-row xl:items-center">
+                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 xl:w-60 xl:mr-10">
+                                                <div className="text-left">
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Kata Sandi Saat Ini</div>
+                                                    <div className="mt-1 text-xs text-slate-500">
+                                                        Masukkan kata sandi lama Anda
                                                     </div>
                                                 </div>
-                                                <div className="mt-1.5 xl:mt-3 text-xs leading-relaxed text-slate-500/80 dark:text-slate-400">
-                                                    Masukkan kata sandi baru
-                                                </div>
-                                            </div>
-                                        </label>
-                                        <div className="flex-1 w-full mt-3 xl:mt-0">
-                                            <FormInput type="text" placeholder="P**********d" />
-                                        </div>
-                                    </div>
-                                    <div className="flex-col block pt-5 mt-5 xl:items-center sm:flex xl:flex-row first:mt-0 first:pt-0">
-                                        <label className="inline-block mb-2 sm:mb-0 sm:mr-5 sm:text-right xl:w-64 xl:mr-14">
-                                            <div className="text-left">
-                                                <div className="flex items-center">
-                                                    <div className="font-medium">
-                                                        Konfirmasi Kata Sandi
-                                                    </div>
-                                                    <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-darkmode-300 dark:text-slate-400 text-xs rounded-md border border-slate-200">
-                                                        Harus diisi
-                                                    </div>
-                                                </div>
-                                                <div className="mt-1.5 xl:mt-3 text-xs leading-relaxed text-slate-500/80 dark:text-slate-400">
-                                                    Masukkan kata sandi baru
-                                                </div>
-                                            </div>
-                                        </label>
-                                        <div className="flex-1 w-full mt-3 xl:mt-0">
-                                            <FormInput type="text" placeholder="P**********d" />
-                                            <div className="mt-4 text-slate-500">
-                                                <div className="font-medium">
-                                                    Kata Sandi Harus Memiliki
-                                                </div>
-                                                <ul className="flex flex-col gap-1 pl-3 mt-2.5 list-disc text-slate-500">
-                                                    <li className="pl-0.5">
-                                                        Setidaknya 8 karakter
-                                                    </li>
-                                                    <li className="pl-0.5">
-                                                        Setidaknya 1 huruf kecil (a-z) dan 1
-                                                        huruf besar (A-Z)
-                                                    </li>
-                                                </ul>
+                                            </label>
+                                            <div className="flex-1 w-full mt-2 xl:mt-0">
+                                                <FormInput
+                                                    type="password"
+                                                    placeholder="••••••••••••"
+                                                    value={passwordForm.currentPassword}
+                                                    onChange={(e) =>
+                                                        setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                                                    }
+                                                    required
+                                                />
                                             </div>
                                         </div>
+
+                                        {/* Kata Sandi Baru */}
+                                        <div className="flex-col block sm:flex xl:flex-row xl:items-center">
+                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 xl:w-60 xl:mr-10">
+                                                <div className="text-left">
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Kata Sandi Baru</div>
+                                                    <div className="mt-1 text-xs text-slate-500">
+                                                        Minimal 8 karakter
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <div className="flex-1 w-full mt-2 xl:mt-0">
+                                                <FormInput
+                                                    type="password"
+                                                    placeholder="••••••••••••"
+                                                    value={passwordForm.newPassword}
+                                                    onChange={(e) =>
+                                                        setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Konfirmasi Kata Sandi */}
+                                        <div className="flex-col block sm:flex xl:flex-row xl:items-center">
+                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 xl:w-60 xl:mr-10">
+                                                <div className="text-left">
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Ulangi Kata Sandi Baru</div>
+                                                    <div className="mt-1 text-xs text-slate-500">
+                                                        Harus sama dengan kata sandi baru
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <div className="flex-1 w-full mt-2 xl:mt-0">
+                                                <FormInput
+                                                    type="password"
+                                                    placeholder="••••••••••••"
+                                                    value={passwordForm.confirmPassword}
+                                                    onChange={(e) =>
+                                                        setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex pt-5 mt-6 border-t border-dashed border-slate-200 dark:border-darkmode-400 justify-end">
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            disabled={savingPassword}
+                                            className="px-6"
+                                        >
+                                            <Lucide icon="Key" className="w-4 h-4 mr-2" />
+                                            {savingPassword ? "Memperbarui..." : "Ubah Kata Sandi"}
+                                        </Button>
                                     </div>
                                 </div>
-                                <div className="flex pt-5 mt-6 border-t border-dashed md:justify-end border-slate-300/70">
-                                    <Button
-                                        variant="outline-primary"
-                                        className="w-full px-4 border-primary/50 md:w-auto"
-                                    >
-                                        Simpan
-                                    </Button>
-                                </div>
-                            </div>
+                            </form>
                         )}
-                        {queryParams.get("page") === "two-factor-authentication" && (
-                            <div className="flex flex-col p-5 box box--stacked">
-                                <div className="flex items-center pb-5 mb-6 font-medium border-b border-dashed border-slate-300/70 text-[0.94rem]">
-                                    2FA Autentikasi
-                                    <div className="flex items-center text-xs font-medium rounded-md text-success bg-success/10 border border-success/10 px-1.5 py-px ml-3">
-                                        <span className="-mt-px">Aktif</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-slate-500">
-                                        Tingkatkan keamanan akun Anda dengan mengaktifkan Autentikasi Dua Faktor di pengaturan.
-                                    </div>
-                                    <div className="flex-col block pt-5 mt-2 xl:items-center sm:flex xl:flex-row first:mt-0 first:pt-0">
-                                        <label className="inline-block mb-2 sm:mb-0 sm:mr-5 sm:text-right xl:w-64 xl:mr-14">
-                                            <div className="text-left">
-                                                <div className="flex items-center">
-                                                    <div className="font-medium">Kata Sandi Akun</div>
-                                                    <div className="ml-2.5 px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-darkmode-300 dark:text-slate-400 text-xs rounded-md border border-slate-200">
-                                                        Harus diisi
-                                                    </div>
-                                                </div>
-                                                <div className="mt-1.5 xl:mt-3 text-xs leading-relaxed text-slate-500/80 dark:text-slate-400">
-                                                    Masukkan kata sandi Anda
-                                                </div>
-                                            </div>
-                                        </label>
-                                        <div className="flex-1 w-full mt-3 xl:mt-0">
-                                            <FormInput type="text" placeholder="P**********d" />
-                                            <FormHelp>
-                                                Kata sandi harus diisi untuk mengaktifkan autentikasi dua faktor
-                                            </FormHelp>
+
+                        {/* TAB 3: 2FA AUTENTIKASI */}
+                        {activeTab === "two-factor-authentication" && (
+                            <form onSubmit={handleToggle2FA}>
+                                <div className="flex flex-col p-6 box box--stacked bg-white dark:bg-darkmode-600 rounded-lg shadow-sm border border-slate-200/60 dark:border-darkmode-400">
+                                    <div className="flex items-center justify-between pb-4 mb-6 border-b border-dashed border-slate-200 dark:border-darkmode-400">
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-bold text-slate-800 dark:text-white text-base">
+                                                Autentikasi Dua Faktor (2FA)
+                                            </span>
+                                            <span
+                                                className={clsx([
+                                                    "px-2.5 py-0.5 text-xs font-semibold rounded-full",
+                                                    twoFactorEnabled
+                                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                                        : "bg-slate-100 text-slate-600 dark:bg-darkmode-700 dark:text-slate-400",
+                                                ])}
+                                            >
+                                                {twoFactorEnabled ? "Aktif" : "Nonaktif"}
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex pt-5 mt-6 border-t border-dashed md:justify-end border-slate-300/70">
-                                    <Button
-                                        variant="outline-primary"
-                                        className="w-full px-4 border-primary/50 md:w-auto"
-                                    >
-                                        Simpan
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                        {queryParams.get("page") === "account-deactivation" && (
-                            <div className="flex flex-col p-5 box box--stacked">
-                                <div className="flex items-center pb-5 mb-6 font-medium border-b border-dashed border-slate-300/70 text-[0.94rem]">
-                                    Hapus Akun
-                                </div>
-                                <div>
-                                    <div className="leading-relaxed">
-                                        Saat Anda memulai proses penghapusan akun, Anda tidak akan lagi
-                                        memiliki akses ke layanan akun Front, dan
-                                        data pribadi Anda akan dihapus secara permanen. Anda memiliki waktu 10 hari
-                                        untuk membatalkan penghapusan jika diperlukan.
+
+                                    <div className="p-4 rounded-lg bg-slate-50 dark:bg-darkmode-700/60 border border-slate-200/60 dark:border-darkmode-500 mb-6">
+                                        <div className="flex gap-3">
+                                            <Lucide icon="ShieldAlert" className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                                            <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                                2FA memberikan lapisan keamanan ekstra untuk melindungi akses akun dan penawaran tender Anda di ACQUIRAS. Setelah aktif, setiap login akan memverifikasi kode otentikasi.
+                                            </div>
+                                        </div>
                                     </div>
-                                    <FormCheck className="mt-5">
+
+                                    <div className="space-y-5">
+                                        <div className="flex-col block sm:flex xl:flex-row xl:items-center">
+                                            <label className="inline-block mb-2 sm:mb-0 sm:mr-5 xl:w-60 xl:mr-10">
+                                                <div className="text-left">
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Kata Sandi Akun</div>
+                                                    <div className="mt-1 text-xs text-slate-500">
+                                                        Konfirmasi kata sandi untuk mengubah status 2FA
+                                                    </div>
+                                                </div>
+                                            </label>
+                                            <div className="flex-1 w-full mt-2 xl:mt-0">
+                                                <FormInput
+                                                    type="password"
+                                                    placeholder="Masukkan kata sandi akun"
+                                                    value={twoFactorPassword}
+                                                    onChange={(e) => setTwoFactorPassword(e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex pt-5 mt-6 border-t border-dashed border-slate-200 dark:border-darkmode-400 justify-end">
+                                        <Button
+                                            type="submit"
+                                            variant={twoFactorEnabled ? "outline-danger" : "primary"}
+                                            disabled={saving2FA}
+                                            className="px-6"
+                                        >
+                                            <Lucide icon="Shield" className="w-4 h-4 mr-2" />
+                                            {saving2FA
+                                                ? "Memproses..."
+                                                : twoFactorEnabled
+                                                ? "Nonaktifkan 2FA"
+                                                : "Aktifkan 2FA"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* TAB 4: HAPUS / NONAKTIFKAN AKUN */}
+                        {activeTab === "account-deactivation" && (
+                            <div className="flex flex-col p-6 box box--stacked bg-white dark:bg-darkmode-600 rounded-lg shadow-sm border border-slate-200/60 dark:border-darkmode-400">
+                                <div className="pb-4 mb-4 font-bold text-danger text-base border-b border-dashed border-slate-200 dark:border-darkmode-400 flex items-center gap-2">
+                                    <Lucide icon="AlertTriangle" className="w-5 h-5" />
+                                    <span>Penonaktifan Akun</span>
+                                </div>
+
+                                <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2">
+                                    <p>
+                                        Saat Anda menonaktifkan akun, akun Anda tidak akan dapat lagi digunakan untuk mengakses sistem pengadaan atau mengajukan penawaran lelang.
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        Data riwayat transaksi, penawaran lelang yang telah diajukan, dan kontrak yang telah ditandatangani akan tetap diarsipkan sesuai regulasi audit pengadaan.
+                                    </p>
+                                </div>
+
+                                <div className="mt-5 p-4 rounded-lg bg-danger/5 border border-danger/20">
+                                    <FormCheck>
                                         <FormCheck.Input
-                                            id="checkbox-switch-1"
+                                            id="confirm-deactivate-checkbox"
                                             type="checkbox"
-                                            value=""
+                                            checked={confirmDelete}
+                                            onChange={(e) => setConfirmDelete(e.target.checked)}
                                         />
-                                        <FormCheck.Label htmlFor="checkbox-switch-1">
-                                            Konfirmasi penghapusan akun dan data pribadi
+                                        <FormCheck.Label htmlFor="confirm-deactivate-checkbox" className="text-xs text-danger font-medium ml-2">
+                                            Saya memahami konsekuensi dan menyetujui penonaktifan akun ini.
                                         </FormCheck.Label>
                                     </FormCheck>
                                 </div>
-                                <div className="flex flex-col-reverse gap-3 pt-5 mt-6 border-t border-dashed md:flex-row md:justify-end border-slate-300/70">
+
+                                <div className="flex pt-5 mt-6 border-t border-dashed border-slate-200 dark:border-darkmode-400 justify-end gap-3">
                                     <Button
-                                        variant="outline-secondary"
-                                        className="w-full px-4 md:w-auto"
+                                        type="button"
+                                        variant="danger"
+                                        disabled={!confirmDelete}
+                                        onClick={() => setDeleteModalOpen(true)}
+                                        className="px-6 disabled:opacity-50"
                                     >
-                                        Pelajari Lebih Lanjut
-                                    </Button>
-                                    <Button
-                                        variant="outline-danger"
-                                        className="w-full px-4 border-danger/50 bg-danger/5 md:w-auto"
-                                    >
-                                        Hapus
+                                        <Lucide icon="Trash2" className="w-4 h-4 mr-2" />
+                                        Nonaktifkan Akun Saya
                                     </Button>
                                 </div>
                             </div>
@@ -484,6 +761,39 @@ function Main() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal Dialog Konfirmasi Deaktivasi Akun */}
+            <Dialog open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} className="relative z-[70]">
+                <Dialog.Panel className="p-6 w-full max-w-md mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl text-center">
+                    <div className="w-12 h-12 rounded-full bg-danger/10 text-danger flex items-center justify-center mx-auto mb-4">
+                        <Lucide icon="AlertTriangle" className="w-6 h-6" />
+                    </div>
+                    <Dialog.Title className="text-base font-bold text-slate-800 dark:text-white">
+                        Konfirmasi Penonaktifan Akun
+                    </Dialog.Title>
+                    <div className="text-xs text-slate-500 mt-2">
+                        Apakah Anda benar-benar yakin ingin menonaktifkan akun ini? Sesi login Anda akan langsung dihentikan.
+                    </div>
+                    <div className="flex justify-center gap-3 mt-6">
+                        <Button
+                            type="button"
+                            variant="outline-secondary"
+                            onClick={() => setDeleteModalOpen(false)}
+                            disabled={deletingAccount}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="danger"
+                            onClick={handleDeleteAccount}
+                            disabled={deletingAccount}
+                        >
+                            {deletingAccount ? "Memproses..." : "Ya, Nonaktifkan"}
+                        </Button>
+                    </div>
+                </Dialog.Panel>
+            </Dialog>
         </div>
     );
 }

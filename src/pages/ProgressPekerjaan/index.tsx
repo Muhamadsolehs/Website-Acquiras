@@ -488,7 +488,7 @@ function Main() {
         </Slideover>
 
         {/* Modal Tambah Milestone */}
-        <Dialog open={milestoneModalOpen} onClose={() => setMilestoneModalOpen(false)} className="relative z-50">
+        <Dialog open={milestoneModalOpen} onClose={() => setMilestoneModalOpen(false)} className="relative z-[70]">
           <Dialog.Panel className="p-6 w-full max-w-md mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
               <Dialog.Title className="text-base font-bold text-slate-800 dark:text-white">
@@ -556,7 +556,7 @@ function Main() {
         </Dialog>
 
         {/* Modal Terbitkan Surat Jalan */}
-        <Dialog open={suratJalanModalOpen} onClose={() => setSuratJalanModalOpen(false)} className="relative z-50">
+        <Dialog open={suratJalanModalOpen} onClose={() => setSuratJalanModalOpen(false)} className="relative z-[70]">
           <Dialog.Panel className="p-6 w-full max-w-md mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
               <Dialog.Title className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
