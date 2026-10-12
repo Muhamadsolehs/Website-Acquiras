@@ -9,6 +9,7 @@ import paketFakers, { Paket } from "@/fakers/paket";
 import companyFakers, { CompanyIdentity } from "@/fakers/company";
 import _ from "lodash";
 import { useNavigate, useParams } from "react-router-dom";
+import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
 
 const ShowDetailLelang: React.FC = () => {
   const navigate = useNavigate();
@@ -72,6 +73,15 @@ const ShowDetailLelang: React.FC = () => {
               </Menu.Items>
             </Menu> */}
           </div>
+        </div>
+
+        {/* Blockchain Smart Contract Audit Trail */}
+        <div className="mb-6">
+          <BlockchainAuditBadge
+            recordType="Tender Published & KAK Sealed"
+            txHash="0xa43edc5e9145cce52d386f254917e481eb44e9943f39138761284561028374"
+            dataHash="0x89f1d43a65239e01bc3d2e9b812f4510aa29b9f71c4912e845cba0281987ef12"
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

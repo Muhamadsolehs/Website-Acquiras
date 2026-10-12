@@ -7,6 +7,7 @@ import Button from "@/components/Base/Button";
 import { Dialog } from "@/components/Base/Headless";
 import api from "@/api/axiosinstance";
 import { toast } from "sonner";
+import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
 
 const PenagihanAction: React.FC = () => {
   const navigate = useNavigate();
@@ -174,6 +175,15 @@ const PenagihanAction: React.FC = () => {
           </div>
         </div>
 
+        {/* Blockchain Smart Contract Escrow / Milestone Audit */}
+        <div className="mb-6">
+          <BlockchainAuditBadge
+            recordType="Escrow Milestone & SPB Payment"
+            txHash="0xb83f12a784d193ea02bc4510aa29b9f71c4912e845cba0281987ef123490abc1"
+            dataHash="0x4e782910fa321bc89a710928345719bc4510aa29b9f71c4912e845cba0281987"
+          />
+        </div>
+
         {/* Financial KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           <div className="box box--stacked p-4">
@@ -274,6 +284,14 @@ const PenagihanAction: React.FC = () => {
                       </span>
                       {item.tanggal_dibayar && (
                         <div className="text-[10px] text-slate-400 mt-1">Tgl bayar: {item.tanggal_dibayar}</div>
+                      )}
+                      {item.status === 'dibayar' && (
+                        <div className="mt-1.5">
+                          <BlockchainAuditBadge
+                            compact
+                            recordType={`Milestone Termin ke-${item.termin_ke || 1} Settled`}
+                          />
+                        </div>
                       )}
                     </Table.Td>
                     <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-center">
