@@ -7,6 +7,7 @@ import { FormInput, FormTextarea } from "@/components/Base/Form";
 import { Dialog } from "@/components/Base/Headless";
 import api from "@/api/axiosinstance";
 import { toast } from "sonner";
+import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
 
 const ShowDetailVendor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -172,6 +173,15 @@ const ShowDetailVendor: React.FC = () => {
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
             Satker: {satker.nama_satker || "Satuan Kerja"}
           </span>
+        </div>
+
+        {/* Blockchain Smart Contract Audit Trail */}
+        <div className="mt-6 mb-2">
+          <BlockchainAuditBadge
+            recordType="Tender Published & KAK Sealed"
+            txHash="0xa43edc5e9145cce52d386f254917e481eb44e9943f39138761284561028374"
+            dataHash="0x89f1d43a65239e01bc3d2e9b812f4510aa29b9f71c4912e845cba0281987ef12"
+          />
         </div>
       </div>
 
@@ -356,6 +366,12 @@ const ShowDetailVendor: React.FC = () => {
                           }`}>
                             {p.status_peserta || "Terdaftar"}
                           </span>
+                          <div className="mt-1.5">
+                            <BlockchainAuditBadge
+                              compact
+                              recordType="Bid Hash Encrypted & Sealed"
+                            />
+                          </div>
                         </Table.Td>
                       </Table.Tr>
                     ))
