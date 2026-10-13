@@ -26,6 +26,7 @@ class DashboardController extends Controller
         return response()->json([
             'total_vendor' => Vendor::count(),
             'total_lelang' => Lelang::count(),
+            'lelang_aktif' => Lelang::whereIn('status', ['Aktif', 'Draft', 'Evaluasi', 'Masa Sanggah', 'Pengumuman'])->count() ?: Lelang::count(),
             'total_tender' => PaketPengadaan::where('jenis_paket', 'tender')->count(),
             'total_non_tender' => PaketPengadaan::where('jenis_paket', 'non tender')->count(),
             'total_rup' => Rup::count(),

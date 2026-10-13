@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setTheme } from "@/stores/themeSlice";
 import logo from "@/assets/images/logo/acquiras.png";
+import api from "@/api/axiosinstance";
 
 
 function Main() {
@@ -41,26 +42,14 @@ function Main() {
     setError({});
 
     try {
-      const apiUrl =
-        import.meta.env.VITE_API_URL ||
-        import.meta.env.VITE_API_BASE_URL ||
-        "http://127.0.0.1:8000/api";
-
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          username: form.username,
-          password: form.password,
-        }),
+      const response = await api.post("/auth/login", {
+        username: form.username,
+        password: form.password,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok && data.token) {
+      if (data && data.token) {
         localStorage.setItem("eproc_token", data.token);
         localStorage.setItem("eproc_user", JSON.stringify(data.user));
         localStorage.setItem(
@@ -84,26 +73,18 @@ function Main() {
             navigate("/dashboard");
           }
         }, 1000);
-      } else {
-        throw {
-          response: {
-            data: {
-              message: data.message || "Login Gagal. Pastikan username dan password benar.",
-              errors: data.errors || [],
-            },
-          },
-        };
       }
     } catch (err: any) {
       console.log(err);
       const apiErrors = err?.response?.data?.errors;
       const apiMessage = err?.response?.data?.message;
-      if (apiErrors && apiErrors.length > 0) {
+      if (apiErrors && Array.isArray(apiErrors) && apiErrors.length > 0) {
         const fieldErrors: { [key: string]: string } = {};
         apiErrors.forEach((e: any) => {
           fieldErrors[e.field] = e.message;
         });
         setError({ ...fieldErrors, general: undefined });
+        if (apiMessage) toast.error(apiMessage);
       } else if (apiMessage) {
         setError({ general: apiMessage });
         setShowGeneralError(true);
