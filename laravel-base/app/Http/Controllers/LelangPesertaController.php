@@ -44,13 +44,31 @@ class LelangPesertaController extends Controller
             ->where('vendor_id', $validated['vendor_id'])
             ->first();
 
+        $blockchain = new \App\Services\BlockchainService();
+
         if ($existing) {
             $existing->update($validated);
-            return response()->json($existing->load(['lelang.paket', 'vendor']));
+            $proof = $blockchain->generateAuditProof('Bid Submission Sealed', $existing->id, [
+                'lelang_id' => $existing->lelang_id,
+                'vendor_id' => $existing->vendor_id,
+                'nilai_penawaran' => $existing->nilai_penawaran,
+                'file_dokumen_penawaran' => $existing->file_dokumen_penawaran,
+            ]);
+            $res = $existing->load(['lelang.paket', 'vendor'])->toArray();
+            $res['blockchain_proof'] = $proof;
+            return response()->json($res);
         }
 
         $item = LelangPeserta::create($validated);
-        return response()->json($item->load(['lelang.paket', 'vendor']), 201);
+        $proof = $blockchain->generateAuditProof('Bid Submission Sealed', $item->id, [
+            'lelang_id' => $item->lelang_id,
+            'vendor_id' => $item->vendor_id,
+            'nilai_penawaran' => $item->nilai_penawaran,
+            'file_dokumen_penawaran' => $item->file_dokumen_penawaran,
+        ]);
+        $res = $item->load(['lelang.paket', 'vendor'])->toArray();
+        $res['blockchain_proof'] = $proof;
+        return response()->json($res, 201);
     }
 
     public function show($id)

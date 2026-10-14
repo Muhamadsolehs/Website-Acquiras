@@ -67,19 +67,43 @@ class LelangController extends Controller
         }
 
         $item = Lelang::create($validated);
-        return response()->json($item->load(['paket.satker', 'createdBy']), 201);
+        $blockchain = new \App\Services\BlockchainService();
+        $proof = $blockchain->generateAuditProof('Tender Published & Sealed', $item->id, [
+            'id' => $item->id,
+            'no_lelang' => $item->no_lelang,
+            'paket_id' => $item->paket_id,
+            'judul_lelang' => $item->judul_lelang,
+            'tanggal_mulai' => $item->tanggal_mulai,
+            'tanggal_selesai' => $item->tanggal_selesai,
+        ]);
+
+        $res = $item->load(['paket.satker', 'createdBy'])->toArray();
+        $res['blockchain_proof'] = $proof;
+        return response()->json($res, 201);
     }
 
     public function show($id)
     {
-        return response()->json(
-            Lelang::with([
-                'paket.satker',
-                'createdBy',
-                'peserta.vendor',
-                'sanggahan.vendor'
-            ])->findOrFail($id)
-        );
+        $item = Lelang::with([
+            'paket.satker',
+            'createdBy',
+            'peserta.vendor',
+            'sanggahan.vendor'
+        ])->findOrFail($id);
+
+        $blockchain = new \App\Services\BlockchainService();
+        $proof = $blockchain->generateAuditProof('Tender Published & Sealed', $item->id, [
+            'id' => $item->id,
+            'no_lelang' => $item->no_lelang,
+            'paket_id' => $item->paket_id,
+            'judul_lelang' => $item->judul_lelang,
+            'tanggal_mulai' => $item->tanggal_mulai,
+            'tanggal_selesai' => $item->tanggal_selesai,
+        ]);
+
+        $res = $item->toArray();
+        $res['blockchain_proof'] = $proof;
+        return response()->json($res);
     }
 
     public function update(Request $request, $id)

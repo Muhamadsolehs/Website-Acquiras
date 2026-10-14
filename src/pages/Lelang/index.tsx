@@ -8,6 +8,9 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/api/axiosinstance";
+import { BlockchainActionModal } from "@/components/Blockchain/BlockchainActionModal";
+import { Web3Service } from "@/utils/web3Client";
+import { BLOCKCHAIN_CONFIG } from "@/config/blockchain";
 
 interface PaketPengadaan {
   id: number;
@@ -48,6 +51,8 @@ function Main() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedLelang, setSelectedLelang] = useState<LelangItem | null>(null);
+  const [blockchainModalOpen, setBlockchainModalOpen] = useState(false);
+  const [activeBlockchainLelang, setActiveBlockchainLelang] = useState<LelangItem | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -158,7 +163,7 @@ function Main() {
         toast.success("Lelang berhasil diperbarui");
       } else {
         await api.post("/lelang", formData);
-        toast.success("Paket lelang baru berhasil diterbitkan");
+        toast.success("✅ Paket lelang baru berhasil diterbitkan & otomatis disegel di Smart Contract!");
       }
       setModalOpen(false);
       fetchData();
@@ -415,6 +420,16 @@ function Main() {
                       <Table.Td className="py-4 border-dashed text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
+                            onClick={() => {
+                              setActiveBlockchainLelang(item);
+                              setBlockchainModalOpen(true);
+                            }}
+                            className="p-1.5 rounded hover:bg-emerald-50 text-emerald-600 dark:hover:bg-darkmode-400"
+                            title="Kunci / Verifikasi ke Smart Contract Blockchain"
+                          >
+                            <Lucide icon="ShieldCheck" className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleOpenEdit(item)}
                             className="p-1.5 rounded hover:bg-slate-100 text-primary dark:hover:bg-darkmode-400"
                             title="Ubah Lelang"
@@ -625,6 +640,26 @@ function Main() {
           </div>
         </Dialog.Panel>
       </Dialog>
+      {/* Modal Eksekusi Smart Contract */}
+      {activeBlockchainLelang && (
+        <BlockchainActionModal
+          open={blockchainModalOpen}
+          onClose={() => setBlockchainModalOpen(false)}
+          title={`Kunci Lelang: ${activeBlockchainLelang.no_lelang}`}
+          functionName="publishTender"
+          contractAddress={BLOCKCHAIN_CONFIG.contractAddress}
+          params={[
+            { label: "Tender ID", value: activeBlockchainLelang.id },
+            { label: "Kode Paket", value: activeBlockchainLelang.paket?.kode_paket || "PKT-01" },
+            { label: "Nama Paket", value: activeBlockchainLelang.judul_lelang || activeBlockchainLelang.paket?.nama_paket || "-" },
+            { label: "Nilai HPS (IDR)", value: activeBlockchainLelang.paket?.nilai_hps || activeBlockchainLelang.paket?.nilai_pagu || 0 },
+            { label: "IPFS CID Dokumen KAK", value: "QmAcquirasKAKDocsSealedOnChain2026" },
+            { label: "Tanggal Mulai (Epoch)", value: Math.floor(new Date(activeBlockchainLelang.tanggal_mulai).getTime() / 1000) },
+            { label: "Tanggal Selesai (Epoch)", value: Math.floor(new Date(activeBlockchainLelang.tanggal_selesai).getTime() / 1000) },
+          ]}
+          remixFormattedInput={`${activeBlockchainLelang.id}, "${activeBlockchainLelang.paket?.kode_paket || 'PKT-01'}", "${activeBlockchainLelang.judul_lelang || activeBlockchainLelang.paket?.nama_paket || 'Lelang'}", ${Math.round(Number(activeBlockchainLelang.paket?.nilai_hps || activeBlockchainLelang.paket?.nilai_pagu || 500000000))}, "QmAcquirasKAKDocsSealedOnChain2026", "0x89f1d43a65239e01bc3d2e9b812f4510aa29b9f71c4912e845cba0281987ef12", ${Math.floor(new Date(activeBlockchainLelang.tanggal_mulai).getTime() / 1000)}, ${Math.floor(new Date(activeBlockchainLelang.tanggal_selesai).getTime() / 1000)}`}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,276 @@
+import { ethers } from "ethers";
+import { BLOCKCHAIN_CONFIG, computeSha256 } from "@/config/blockchain";
+import { ACQUIRAS_CONTRACT_ABI } from "@/config/acquirasAbi";
+
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
+export interface PublishTenderPayload {
+  tenderId: number;
+  kodePaket: string;
+  namaPaket: string;
+  nilaiHps: number;
+  ipfsKakCid: string;
+  dataHash?: string;
+  tanggalMulai: string | number;
+  tanggalSelesai: string | number;
+}
+
+export interface SubmitBidPayload {
+  tenderId: number;
+  vendorId: number;
+  penawaranHarga: number;
+  ipfsDokumenPenawaran: string;
+  penawaranHash?: string;
+}
+
+export interface AwardWinnerPayload {
+  tenderId: number;
+  winnerVendorId: number;
+  finalPrice: number;
+  ipfsBeritaAcara: string;
+}
+
+export interface RecordSignaturePayload {
+  refId: number;
+  docType: string;
+  documentHash: string;
+  signerName: string;
+  bsreCertId: string;
+}
+
+export interface ApproveMilestonePayload {
+  kontrakId: number;
+  terminKe: number;
+  noSpb: string;
+}
+
+export interface TxResult {
+  success: boolean;
+  txHash: string;
+  blockNumber?: number;
+  explorerUrl: string;
+  dataHash?: string;
+  message?: string;
+}
+
+export class Web3Service {
+  /**
+   * Cek apakah Web3 wallet (MetaMask) tersedia di browser
+   */
+  static isWalletAvailable(): boolean {
+    return typeof window !== "undefined" && typeof window.ethereum !== "undefined";
+  }
+
+  /**
+   * Ambil Provider dari Browser (MetaMask)
+   */
+  static getProvider(): ethers.BrowserProvider {
+    if (!this.isWalletAvailable()) {
+      throw new Error("MetaMask tidak terdeteksi di browser. Silakan pasang ekstensi MetaMask.");
+    }
+    return new ethers.BrowserProvider(window.ethereum);
+  }
+
+  /**
+   * Minta akses koneksi akun dari wallet
+   */
+  static async requestAccounts(): Promise<string[]> {
+    if (!this.isWalletAvailable()) {
+      throw new Error("MetaMask tidak terdeteksi. Silakan pasang ekstensi MetaMask di browser.");
+    }
+    return await window.ethereum.request({ method: "eth_requestAccounts" });
+  }
+
+  /**
+   * Ambil akun yang sedang aktif
+   */
+  static async getActiveAccount(): Promise<string | null> {
+    if (!this.isWalletAvailable()) return null;
+    try {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      return accounts && accounts.length > 0 ? accounts[0] : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Buat instance Contract terhubung dengan Signer aktif
+   */
+  static async getContractWithSigner(): Promise<{ contract: ethers.Contract; signer: ethers.Signer; address: string }> {
+    const provider = this.getProvider();
+    const signer = await provider.getSigner();
+    const contractAddress = BLOCKCHAIN_CONFIG.contractAddress;
+    const contract = new ethers.Contract(contractAddress, ACQUIRAS_CONTRACT_ABI, signer);
+    return { contract, signer, address: contractAddress };
+  }
+
+  /**
+   * 1. FITUR PUBLISH TENDER ON-CHAIN (publishTender)
+   */
+  static async publishTenderOnChain(payload: PublishTenderPayload): Promise<TxResult> {
+    const dataHash = payload.dataHash || (await computeSha256(
+      JSON.stringify({
+        id: payload.tenderId,
+        kode: payload.kodePaket,
+        nama: payload.namaPaket,
+        hps: payload.nilaiHps,
+        kak: payload.ipfsKakCid,
+      })
+    ));
+
+    const tglMulai = typeof payload.tanggalMulai === "number"
+      ? payload.tanggalMulai
+      : Math.floor(new Date(payload.tanggalMulai).getTime() / 1000);
+
+    const tglSelesai = typeof payload.tanggalSelesai === "number"
+      ? payload.tanggalSelesai
+      : Math.floor(new Date(payload.tanggalSelesai).getTime() / 1000);
+
+    const ipfsCid = payload.ipfsKakCid || "QmAcquirasKAKDocsSealedOnChain2026";
+
+    const { contract } = await this.getContractWithSigner();
+
+    const tx = await contract.publishTender(
+      BigInt(payload.tenderId),
+      payload.kodePaket,
+      payload.namaPaket,
+      BigInt(Math.round(payload.nilaiHps)),
+      ipfsCid,
+      dataHash,
+      BigInt(tglMulai),
+      BigInt(tglSelesai)
+    );
+
+    const receipt = await tx.wait();
+
+    return {
+      success: true,
+      txHash: tx.hash,
+      blockNumber: receipt?.blockNumber,
+      explorerUrl: `${BLOCKCHAIN_CONFIG.explorerUrl}/tx/${tx.hash}`,
+      dataHash,
+      message: "Paket lelang berhasil dikunci permanen di smart contract!",
+    };
+  }
+
+  /**
+   * 2. FITUR SUBMIT PENAWARAN ON-CHAIN (submitBid)
+   */
+  static async submitBidOnChain(payload: SubmitBidPayload): Promise<TxResult> {
+    const penawaranHash = payload.penawaranHash || (await computeSha256(
+      JSON.stringify({
+        tenderId: payload.tenderId,
+        vendorId: payload.vendorId,
+        harga: payload.penawaranHarga,
+        doc: payload.ipfsDokumenPenawaran,
+      })
+    ));
+
+    const { contract } = await this.getContractWithSigner();
+
+    const tx = await contract.submitBid(
+      BigInt(payload.tenderId),
+      BigInt(payload.vendorId),
+      BigInt(Math.round(payload.penawaranHarga)),
+      payload.ipfsDokumenPenawaran || "QmBidDocsEncrypted2026",
+      penawaranHash
+    );
+
+    const receipt = await tx.wait();
+
+    return {
+      success: true,
+      txHash: tx.hash,
+      blockNumber: receipt?.blockNumber,
+      explorerUrl: `${BLOCKCHAIN_CONFIG.explorerUrl}/tx/${tx.hash}`,
+      dataHash: penawaranHash,
+      message: "Dokumen penawaran harga berhasil disegel dan dicatat di blockchain!",
+    };
+  }
+
+  /**
+   * 3. FITUR PENETAPAN PEMENANG (awardWinner)
+   */
+  static async awardWinnerOnChain(payload: AwardWinnerPayload): Promise<TxResult> {
+    const { contract } = await this.getContractWithSigner();
+
+    const tx = await contract.awardWinner(
+      BigInt(payload.tenderId),
+      BigInt(payload.winnerVendorId),
+      BigInt(Math.round(payload.finalPrice)),
+      payload.ipfsBeritaAcara || "QmBeritaAcaraPemenangLelang2026"
+    );
+
+    const receipt = await tx.wait();
+
+    return {
+      success: true,
+      txHash: tx.hash,
+      blockNumber: receipt?.blockNumber,
+      explorerUrl: `${BLOCKCHAIN_CONFIG.explorerUrl}/tx/${tx.hash}`,
+      message: "Penetapan pemenang lelang resmi terkunci secara hukum digital on-chain!",
+    };
+  }
+
+  /**
+   * 4. FITUR DIGITAL SIGNATURE / TTE KONTRAK (recordSignature)
+   */
+  static async recordSignatureOnChain(payload: RecordSignaturePayload): Promise<TxResult> {
+    const { contract } = await this.getContractWithSigner();
+
+    const tx = await contract.recordSignature(
+      BigInt(payload.refId),
+      payload.docType,
+      payload.documentHash,
+      payload.signerName,
+      payload.bsreCertId
+    );
+
+    const receipt = await tx.wait();
+
+    return {
+      success: true,
+      txHash: tx.hash,
+      blockNumber: receipt?.blockNumber,
+      explorerUrl: `${BLOCKCHAIN_CONFIG.explorerUrl}/tx/${tx.hash}`,
+      dataHash: payload.documentHash,
+      message: "TTE & Hash Dokumen Kontrak resmi diverifikasi on-chain!",
+    };
+  }
+
+  /**
+   * 5. FITUR PERSETUJUAN PEMBAYARAN TERMIN (approveMilestonePayment)
+   */
+  static async approveMilestonePaymentOnChain(payload: ApproveMilestonePayload): Promise<TxResult> {
+    const { contract } = await this.getContractWithSigner();
+
+    const tx = await contract.approveMilestonePayment(
+      BigInt(payload.kontrakId),
+      payload.terminKe,
+      payload.noSpb
+    );
+
+    const receipt = await tx.wait();
+
+    return {
+      success: true,
+      txHash: tx.hash,
+      blockNumber: receipt?.blockNumber,
+      explorerUrl: `${BLOCKCHAIN_CONFIG.explorerUrl}/tx/${tx.hash}`,
+      message: "Persetujuan pembayaran SPB termin berhasil dieksekusi di smart contract!",
+    };
+  }
+
+  /**
+   * BACA DATA TENDER LANGSUNG DARI SMART CONTRACT (getTender)
+   */
+  static async getTenderOnChain(tenderId: number) {
+    const { contract } = await this.getContractWithSigner();
+    return await contract.getTender(BigInt(tenderId));
+  }
+}
