@@ -36,8 +36,16 @@ class LelangPesertaController extends Controller
             'skor_harga' => 'nullable|numeric|between:0,100',
             'total_skor' => 'nullable|numeric|between:0,100',
             'file_dokumen_penawaran' => 'nullable|string|max:255',
+            'file_dokumen' => 'nullable|file|mimes:pdf,doc,docx|max:25600',
             'status_peserta' => 'nullable|in:Terdaftar,Memasukkan Penawaran,Lolos Evaluasi,Gugur,Pemenang',
         ]);
+
+        if ($request->hasFile('file_dokumen')) {
+            $uploaded = $request->file('file_dokumen');
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $uploaded->getClientOriginalName());
+            $uploaded->storeAs('public/dokumen_penawaran', $filename);
+            $validated['file_dokumen_penawaran'] = $filename;
+        }
 
         // Cek jika sudah terdaftar
         $existing = LelangPeserta::where('lelang_id', $validated['lelang_id'])

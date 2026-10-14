@@ -21,8 +21,26 @@ const ShowDetailVendor: React.FC = () => {
   // Modal Daftar/Ikuti Lelang
   const [bidModalOpen, setBidModalOpen] = useState(false);
   const [nilaiPenawaran, setNilaiPenawaran] = useState("");
-  const [fileDokumen, setFileDokumen] = useState("dokumen_penawaran_lengkap.pdf");
+  const [fileDokumen, setFileDokumen] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [catatanPenawaran, setCatatanPenawaran] = useState("");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+        toast.error("Format dokumen harus berupa file PDF (.pdf)");
+        return;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        toast.error("Ukuran file PDF maksimal 25 MB");
+        return;
+      }
+      setSelectedFile(file);
+      setFileDokumen(file.name);
+    }
+  };
 
   const fetchDetail = async () => {
     try {
@@ -55,19 +73,32 @@ const ShowDetailVendor: React.FC = () => {
       return;
     }
 
+    if (!selectedFile && !fileDokumen) {
+      toast.error("Mohon unggah berkas dokumen penawaran teknis & harga (format PDF)");
+      return;
+    }
+
     const vendorId = currentUser?.vendor?.id || 1; // Fallback to current vendor
 
     try {
       setSubmitting(true);
-      await api.post("/lelang-peserta", {
-        lelang_id: id,
-        vendor_id: vendorId,
-        nilai_penawaran: Number(nilaiPenawaran),
-        file_dokumen_penawaran: fileDokumen,
-        status_peserta: "Memasukkan Penawaran",
+      const formData = new FormData();
+      formData.append("lelang_id", String(id));
+      formData.append("vendor_id", String(vendorId));
+      formData.append("nilai_penawaran", String(nilaiPenawaran));
+      formData.append("status_peserta", "Memasukkan Penawaran");
+      if (selectedFile) {
+        formData.append("file_dokumen", selectedFile);
+        formData.append("file_dokumen_penawaran", selectedFile.name);
+      } else {
+        formData.append("file_dokumen_penawaran", fileDokumen);
+      }
+
+      await api.post("/lelang-peserta", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Berhasil mendaftar dan mengirimkan penawaran lelang!");
+      toast.success("Berhasil mendaftar dan mengunggah penawaran lelang!");
       setBidModalOpen(false);
       fetchDetail();
     } catch (err: any) {
@@ -135,10 +166,10 @@ const ShowDetailVendor: React.FC = () => {
             <div className="text-right">
               <div className="text-xs text-slate-300">Nilai Pagu Paket</div>
               <div className="text-2xl font-bold text-emerald-400">
-                Rp {Number(paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
+                Rp {Number(paket.nilai_pagu || paket.nilai_hps || paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
               </div>
               <div className="text-xs text-slate-400">
-                HPS: Rp {Number(paket.hps || 0).toLocaleString("id-ID")}
+                HPS: Rp {Number(paket.nilai_hps || paket.hps || paket.nilai_pagu || 0).toLocaleString("id-ID")}
               </div>
             </div>
 
@@ -419,24 +450,77 @@ const ShowDetailVendor: React.FC = () => {
                 className="mt-1"
               />
               <div className="text-xs text-slate-500 mt-1">
-                Pagu: Rp {Number(paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
+                Pagu: Rp {Number(paket.nilai_pagu || paket.nilai_hps || paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
-                Nama File Dokumen Penawaran Teknis & Harga *
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase flex items-center justify-between">
+                <span>Dokumen Penawaran Teknis & Harga (.PDF) *</span>
+                <span className="text-[11px] font-normal text-slate-400">Format PDF, Maks. 25 MB</span>
               </label>
-              <FormInput
-                type="text"
-                placeholder="Contoh: dokumen_penawaran_pt_vendor.pdf"
-                value={fileDokumen}
-                onChange={(e) => setFileDokumen(e.target.value)}
-                required
-                className="mt-1"
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleFileChange}
+                className="hidden"
               />
-              <div className="text-xs text-slate-500 mt-1">
-                Dokumen terenkripsi hingga waktu pembukaan lelang.
+
+              {!selectedFile ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-1.5 border-2 border-dashed border-slate-300 dark:border-darkmode-400 hover:border-primary/60 dark:hover:border-primary rounded-xl p-4 text-center cursor-pointer transition-all bg-slate-50/70 dark:bg-darkmode-700/50 hover:bg-slate-100/80 group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                    <Lucide icon="UploadCloud" className="w-5 h-5" />
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Pilih Berkas PDF Dokumen Penawaran
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    Klik untuk memilih file PDF dari perangkat Anda
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-1.5 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                      <Lucide icon="FileText" className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-800 dark:text-white truncate">
+                        {selectedFile.name}
+                      </div>
+                      <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                        <span>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        <span>•</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                          <Lucide icon="ShieldCheck" className="w-3.5 h-3.5" />
+                          Siap Disegel ke Smart Contract
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setFileDokumen("");
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-danger rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                    title="Ganti berkas"
+                  >
+                    <Lucide icon="Trash2" className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              <div className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1.5">
+                <Lucide icon="Lock" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Dokumen dienkripsi & sidik jari SHA-256 dicatat di blockchain hingga pembukaan lelang.</span>
               </div>
             </div>
 
