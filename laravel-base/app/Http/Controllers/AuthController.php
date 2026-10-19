@@ -84,6 +84,7 @@ class AuthController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'role' => (string) $user->role_id,
+                'role_id' => (int) $user->role_id,
                 'role_name' => $user->role ? $user->role->name : ($user->role_id == 1 ? 'Admin' : 'Vendor'),
                 'vendor' => $user->vendor,
             ]

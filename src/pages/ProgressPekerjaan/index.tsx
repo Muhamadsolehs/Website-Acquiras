@@ -61,7 +61,8 @@ function Main() {
     fetchContracts();
   }, []);
 
-  const isAdmin = currentUser?.role_id === 1 || currentUser?.role?.id === 1;
+  const userRole = localStorage.getItem("eproc_user_role") || (currentUser?.role !== undefined ? String(currentUser?.role) : "") || (currentUser?.role_id !== undefined ? String(currentUser?.role_id) : "");
+  const isAdmin = userRole === "1" || currentUser?.role_name === "Admin" || currentUser?.role === 1 || currentUser?.role_id === 1 || currentUser?.role?.id === 1;
 
   const handleAddMilestone = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +72,15 @@ function Main() {
       setSubmittingMilestone(true);
       await api.post("/pekerjaan-milestone", {
         kontrak_id: selected.id,
-        ...milestoneForm,
+        judul_milestone: milestoneForm.judul_milestone,
+        target_persen: Number(milestoneForm.bobot_persen),
+        bobot_persen: Number(milestoneForm.bobot_persen),
+        realisasi_persen: 0,
+        progress_persen: 0,
+        target_selesai: milestoneForm.tanggal_target,
+        tanggal_target: milestoneForm.tanggal_target,
+        status: "pending",
+        status_milestone: "Belum Mulai",
       });
 
       toast.success("Milestone pekerjaan berhasil ditambahkan!");
@@ -95,6 +104,7 @@ function Main() {
     try {
       const status = newProgress >= 100 ? "Selesai" : newProgress > 0 ? "Dalam Progres" : "Belum Mulai";
       await api.put(`/pekerjaan-milestone/${milestoneId}`, {
+        realisasi_persen: newProgress,
         progress_persen: newProgress,
         status_milestone: status,
       });
@@ -125,11 +135,19 @@ function Main() {
   };
 
   const filtered = contracts.filter((c) => {
-    if (statusFilter !== "all" && c.status_pekerjaan !== statusFilter) return false;
+    const rawStatus = (c.status_pekerjaan || "Persiapan").toLowerCase();
+    if (statusFilter !== "all") {
+      const sf = statusFilter.toLowerCase();
+      if (sf === "pelaksanaan" && !(rawStatus === "pelaksanaan" || rawStatus === "progress")) return false;
+      if (sf === "selesai" && !(rawStatus === "selesai" || rawStatus === "done")) return false;
+      if (sf === "persiapan" && rawStatus !== "persiapan") return false;
+      if (sf !== "pelaksanaan" && sf !== "selesai" && sf !== "persiapan" && rawStatus !== sf) return false;
+    }
     const s = q.toLowerCase();
+    const contractNo = (c.nomor_kontrak || c.no_kontrak || "").toLowerCase();
     return (
       !s ||
-      (c.no_kontrak || "").toLowerCase().includes(s) ||
+      contractNo.includes(s) ||
       (c.paket?.nama_paket || "").toLowerCase().includes(s) ||
       (c.paket?.kode_paket || "").toLowerCase().includes(s) ||
       (c.vendor?.nama_perusahaan || "").toLowerCase().includes(s)
@@ -138,9 +156,9 @@ function Main() {
 
   const summary = {
     total: contracts.length,
-    pelaksanaan: contracts.filter((c) => c.status_pekerjaan === "Pelaksanaan").length,
-    selesai: contracts.filter((c) => c.status_pekerjaan === "Selesai").length,
-    persiapan: contracts.filter((c) => c.status_pekerjaan === "Persiapan").length,
+    pelaksanaan: contracts.filter((c) => c.status_pekerjaan === "Pelaksanaan" || c.status_pekerjaan === "progress").length,
+    selesai: contracts.filter((c) => c.status_pekerjaan === "Selesai" || c.status_pekerjaan === "done").length,
+    persiapan: contracts.filter((c) => c.status_pekerjaan === "Persiapan" || !c.status_pekerjaan).length,
   };
 
   return (
@@ -247,80 +265,85 @@ function Main() {
                       </Table.Td>
                     </Table.Tr>
                   ) : (
-                    filtered.map((item, idx) => (
-                      <Table.Tr key={item.id || idx} className="hover:bg-slate-50/50">
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
-                          {idx + 1}
-                        </Table.Td>
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
-                          <div className="font-mono text-xs font-semibold text-primary">
-                            {item.no_kontrak}
-                          </div>
-                          <div className="font-medium text-slate-800 dark:text-white line-clamp-1 mt-0.5">
-                            {item.paket?.nama_paket || "Paket Pengadaan"}
-                          </div>
-                        </Table.Td>
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-medium text-slate-700 dark:text-slate-300">
-                          {item.vendor?.nama_perusahaan || `Vendor #${item.vendor_id}`}
-                        </Table.Td>
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-semibold text-emerald-600">
-                          Rp {Number(item.nilai_kontrak || 0).toLocaleString("id-ID")}
-                        </Table.Td>
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
-                          <div className="flex items-center gap-2">
-                            <div className="w-full">
-                              <Progress className="h-2 rounded-full">
-                                <Progress.Bar
-                                  className={item.progress_persen >= 100 ? "bg-emerald-500" : "bg-primary"}
-                                  role="progressbar"
-                                  aria-valuenow={item.progress_persen}
-                                  aria-valuemin={0}
-                                  aria-valuemax={100}
-                                  style={{ width: `${item.progress_persen}%` }}
-                                />
-                              </Progress>
+                    filtered.map((item, idx) => {
+                      const progressVal = Number(item.progres_persen ?? item.progress_persen ?? 0);
+                      const rawStatus = item.status_pekerjaan || "Persiapan";
+                      const displayStatus = rawStatus === 'progress' ? 'Pelaksanaan' : rawStatus === 'done' ? 'Selesai' : rawStatus;
+                      return (
+                        <Table.Tr key={item.id || idx} className="hover:bg-slate-50/50">
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                            {idx + 1}
+                          </Table.Td>
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                            <div className="font-mono text-xs font-semibold text-primary">
+                              {item.nomor_kontrak || item.no_kontrak || "-"}
                             </div>
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                              {item.progress_persen}%
+                            <div className="font-medium text-slate-800 dark:text-white line-clamp-1 mt-0.5">
+                              {item.paket?.nama_paket || "Paket Pengadaan"}
+                            </div>
+                          </Table.Td>
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-medium text-slate-700 dark:text-slate-300">
+                            {item.vendor?.nama_perusahaan || `Vendor #${item.vendor_id}`}
+                          </Table.Td>
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 font-semibold text-emerald-600">
+                            Rp {Number(item.nilai_kontrak || 0).toLocaleString("id-ID")}
+                          </Table.Td>
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                            <div className="flex items-center gap-2">
+                              <div className="w-full">
+                                <Progress className="h-2 rounded-full">
+                                  <Progress.Bar
+                                    className={progressVal >= 100 ? "bg-emerald-500" : "bg-primary"}
+                                    role="progressbar"
+                                    aria-valuenow={progressVal}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    style={{ width: `${progressVal}%` }}
+                                  />
+                                </Progress>
+                              </div>
+                              <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                {progressVal}%
+                              </span>
+                            </div>
+                          </Table.Td>
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-xs">
+                            {item.no_surat_jalan ? (
+                              <span className="text-emerald-600 font-medium flex items-center gap-1">
+                                <Lucide icon="Check" className="w-3.5 h-3.5" />
+                                {item.no_surat_jalan}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 italic">Belum terbit</span>
+                            )}
+                          </Table.Td>
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                              (displayStatus === 'Selesai') ? 'bg-emerald-100 text-emerald-800' :
+                              (displayStatus === 'Pelaksanaan') ? 'bg-blue-100 text-blue-800' :
+                              (displayStatus === 'Serah Terima') ? 'bg-purple-100 text-purple-800' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {displayStatus}
                             </span>
-                          </div>
-                        </Table.Td>
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-xs">
-                          {item.no_surat_jalan ? (
-                            <span className="text-emerald-600 font-medium flex items-center gap-1">
-                              <Lucide icon="Check" className="w-3.5 h-3.5" />
-                              {item.no_surat_jalan}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 italic">Belum terbit</span>
-                          )}
-                        </Table.Td>
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            item.status_pekerjaan === 'Selesai' ? 'bg-emerald-100 text-emerald-800' :
-                            item.status_pekerjaan === 'Pelaksanaan' ? 'bg-blue-100 text-blue-800' :
-                            item.status_pekerjaan === 'Serah Terima' ? 'bg-purple-100 text-purple-800' :
-                            'bg-amber-100 text-amber-800'
-                          }`}>
-                            {item.status_pekerjaan}
-                          </span>
-                        </Table.Td>
-                        <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-center">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            className="text-xs px-2.5 py-1"
-                            onClick={() => {
-                              setSelected(item);
-                              setOpenDetail(true);
-                            }}
-                          >
-                            <Lucide icon="Eye" className="w-3.5 h-3.5 mr-1" />
-                            Detail
-                          </Button>
-                        </Table.Td>
-                      </Table.Tr>
-                    ))
+                          </Table.Td>
+                          <Table.Td className="py-3.5 border-dashed dark:bg-darkmode-600 text-center">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="text-xs px-2.5 py-1"
+                              onClick={() => {
+                                setSelected(item);
+                                setOpenDetail(true);
+                              }}
+                            >
+                              <Lucide icon="Eye" className="w-3.5 h-3.5 mr-1" />
+                              Detail
+                            </Button>
+                          </Table.Td>
+                        </Table.Tr>
+                      );
+                    })
                   )}
                 </Table.Tbody>
               </Table>
@@ -348,7 +371,7 @@ function Main() {
                     {selected.paket?.nama_paket}
                   </div>
                   <div className="text-xs text-slate-500 font-mono mt-0.5">
-                    No Kontrak: {selected.no_kontrak}
+                    No Kontrak: {selected.nomor_kontrak || selected.no_kontrak || "-"}
                   </div>
                 </div>
 
@@ -380,31 +403,44 @@ function Main() {
                 </div>
 
                 {/* Surat Jalan Section */}
-                <div className="p-4 border border-dashed rounded-lg border-slate-300 dark:border-darkmode-400">
-                  <div className="flex items-center justify-between">
+                <div className="p-4 border rounded-lg bg-slate-50/70 border-slate-200 dark:border-darkmode-400 dark:bg-darkmode-700/50">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <div className="text-xs font-semibold text-slate-500 uppercase">Surat Jalan Pekerjaan</div>
-                      <div className="font-bold text-slate-800 dark:text-white mt-1">
-                        {selected.no_surat_jalan || "Surat Jalan Belum Diterbitkan"}
+                      <div className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1.5">
+                        <Lucide icon="Truck" className="w-3.5 h-3.5 text-primary" />
+                        Surat Jalan Pekerjaan
+                      </div>
+                      <div className="font-bold text-slate-800 dark:text-white mt-1 text-sm flex items-center gap-2">
+                        {selected.no_surat_jalan ? (
+                          <span className="text-emerald-600 flex items-center gap-1.5 font-mono">
+                            <Lucide icon="CheckCircle2" className="w-4 h-4" />
+                            {selected.no_surat_jalan}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 italic">Surat Jalan Belum Diterbitkan</span>
+                        )}
                       </div>
                       {selected.tanggal_surat_jalan && (
-                        <div className="text-xs text-slate-500">Tgl: {selected.tanggal_surat_jalan}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          Tgl Terbit: <span className="font-medium text-slate-700 dark:text-slate-300">{selected.tanggal_surat_jalan}</span>
+                        </div>
                       )}
                     </div>
-                    {isAdmin && !selected.no_surat_jalan && (
+                    {isAdmin && (
                       <Button
-                        variant="primary"
+                        variant={selected.no_surat_jalan ? "outline-secondary" : "primary"}
                         size="sm"
+                        className="text-xs shrink-0 self-start sm:self-center"
                         onClick={() => {
                           setSuratJalanForm({
-                            no_surat_jalan: `SJ-${Date.now().toString().slice(-4)}/2026`,
-                            tanggal_surat_jalan: new Date().toISOString().split("T")[0],
+                            no_surat_jalan: selected.no_surat_jalan || `SJ-${Date.now().toString().slice(-4)}/2026`,
+                            tanggal_surat_jalan: selected.tanggal_surat_jalan || new Date().toISOString().split("T")[0],
                           });
                           setSuratJalanModalOpen(true);
                         }}
                       >
-                        <Lucide icon="Truck" className="w-3.5 h-3.5 mr-1.5" />
-                        Terbitkan Surat Jalan
+                        <Lucide icon={selected.no_surat_jalan ? "Edit3" : "Truck"} className="w-3.5 h-3.5 mr-1.5" />
+                        {selected.no_surat_jalan ? "Ubah Surat Jalan" : "Terbitkan Surat Jalan"}
                       </Button>
                     )}
                   </div>
@@ -413,73 +449,107 @@ function Main() {
                 {/* Milestones */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-slate-800 dark:text-white text-sm">
-                      Daftar Milestone Pekerjaan
-                    </h4>
-                    <Button
-                      variant="outline-secondary"
-                      size="sm"
-                      onClick={() => setMilestoneModalOpen(true)}
-                    >
-                      <Lucide icon="Plus" className="w-3.5 h-3.5 mr-1" />
-                      Tambah Milestone
-                    </Button>
+                    <div>
+                      <h4 className="font-bold text-slate-800 dark:text-white text-sm">
+                        Daftar Milestone Pekerjaan
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        {isAdmin ? "Atur tahapan pekerjaan dan bobot persen" : "Tahapan pelaksanaan pekerjaan kontrak"}
+                      </p>
+                    </div>
+                    {isAdmin && (
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => setMilestoneModalOpen(true)}
+                      >
+                        <Lucide icon="Plus" className="w-3.5 h-3.5 mr-1" />
+                        Tambah Milestone
+                      </Button>
+                    )}
                   </div>
 
                   <div className="space-y-3">
-                    {(!selected.milestones || selected.milestones.length === 0) ? (
-                      <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-darkmode-700 rounded">
-                        Belum ada tahapan milestone yang dicatat.
-                      </div>
-                    ) : (
-                      selected.milestones.map((m: any, mIdx: number) => (
-                        <div key={m.id || mIdx} className="p-3.5 bg-slate-50 dark:bg-darkmode-700 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-sm text-slate-800 dark:text-white">
-                              {m.judul_milestone}
-                            </span>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">
-                              Bobot: {m.bobot_persen}%
-                            </span>
+                    {(() => {
+                      const milestonesList = selected.milestone || selected.milestones || [];
+                      if (milestonesList.length === 0) {
+                        return (
+                          <div className="p-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-darkmode-700 rounded">
+                            Belum ada tahapan milestone yang dicatat.
                           </div>
+                        );
+                      }
 
-                          <div className="mt-3 flex items-center gap-3">
-                            <div className="flex-1">
-                              <Progress className="h-2 rounded-full">
-                                <Progress.Bar
-                                  className={m.progress_persen >= 100 ? "bg-emerald-500" : "bg-primary"}
-                                  role="progressbar"
-                                  style={{ width: `${m.progress_persen}%` }}
-                                />
-                              </Progress>
-                            </div>
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-10 text-right">
-                              {m.progress_persen}%
-                            </span>
-                          </div>
+                      return milestonesList.map((m: any, mIdx: number) => {
+                        const bobot = Number(m.target_persen ?? m.bobot_persen ?? 0);
+                        const progress = Number(m.realisasi_persen ?? m.progress_persen ?? 0);
+                        const statusText = m.status === 'completed' || m.status_milestone === 'Selesai' || progress >= 100
+                          ? 'Selesai'
+                          : (m.status === 'in_progress' || m.status_milestone === 'Dalam Progres' || progress > 0
+                              ? 'Dalam Progres'
+                              : 'Belum Mulai');
 
-                          <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-200/50 dark:border-darkmode-500 text-xs">
-                            <span className="text-slate-500">
-                              Status: <strong className="text-slate-700 dark:text-slate-300">{m.status_milestone}</strong>
-                            </span>
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={() => handleUpdateMilestoneProgress(m.id, Math.min(100, (m.progress_persen || 0) + 25))}
-                                className="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium"
-                              >
-                                +25%
-                              </button>
-                              <button
-                                onClick={() => handleUpdateMilestoneProgress(m.id, 100)}
-                                className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-                              >
-                                Selesai (100%)
-                              </button>
+                        return (
+                          <div key={m.id || mIdx} className="p-3.5 bg-slate-50 dark:bg-darkmode-700 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-semibold text-sm text-slate-800 dark:text-white">
+                                  {m.judul_milestone}
+                                </span>
+                                {(m.target_selesai || m.tanggal_target) && (
+                                  <div className="text-[11px] text-slate-400">
+                                    Target: {m.target_selesai || m.tanggal_target}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">
+                                Bobot: {bobot}%
+                              </span>
+                            </div>
+
+                            <div className="mt-3 flex items-center gap-3">
+                              <div className="flex-1">
+                                <Progress className="h-2 rounded-full">
+                                  <Progress.Bar
+                                    className={progress >= 100 ? "bg-emerald-500" : "bg-primary"}
+                                    role="progressbar"
+                                    aria-valuenow={progress}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </Progress>
+                              </div>
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 w-10 text-right">
+                                {progress}%
+                              </span>
+                            </div>
+
+                            <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-200/50 dark:border-darkmode-500 text-xs">
+                              <span className="text-slate-500">
+                                Status: <strong className="text-slate-700 dark:text-slate-300">{statusText}</strong>
+                              </span>
+                              <div className="flex gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateMilestoneProgress(m.id, Math.min(100, progress + 25))}
+                                  className="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium text-xs transition"
+                                >
+                                  +25%
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateMilestoneProgress(m.id, 100)}
+                                  className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition"
+                                >
+                                  Selesai (100%)
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
-                    )}
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
