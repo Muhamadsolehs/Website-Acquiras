@@ -54,6 +54,18 @@ function Main() {
   const [blockchainModalOpen, setBlockchainModalOpen] = useState(false);
   const [activeBlockchainLelang, setActiveBlockchainLelang] = useState<LelangItem | null>(null);
 
+  // Quick Add Paket State
+  const [createPaketOpen, setCreatePaketOpen] = useState(false);
+  const [submittingPaket, setSubmittingPaket] = useState(false);
+  const [paketForm, setPaketForm] = useState({
+    nama_paket: "",
+    jenis_paket: "tender",
+    jenis_pengadaan: "Barang",
+    nilai_pagu: "",
+    nilai_hps: "",
+    lokasi_pekerjaan: "Jakarta",
+  });
+
   // Form State
   const [formData, setFormData] = useState({
     id: 0,
@@ -196,6 +208,55 @@ function Main() {
       currency: "IDR",
       maximumFractionDigits: 0,
     }).format(Number(val));
+  };
+
+  const handleCreatePaket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paketForm.nama_paket || !paketForm.nilai_pagu) {
+      toast.error("Nama paket dan nilai pagu wajib diisi");
+      return;
+    }
+
+    try {
+      setSubmittingPaket(true);
+      const res = await api.post("/paket-pengadaan", {
+        nama_paket: paketForm.nama_paket,
+        jenis_paket: paketForm.jenis_paket,
+        jenis_pengadaan: paketForm.jenis_pengadaan,
+        nilai_pagu: Number(paketForm.nilai_pagu),
+        nilai_hps: Number(paketForm.nilai_hps || paketForm.nilai_pagu),
+        lokasi_pekerjaan: paketForm.lokasi_pekerjaan,
+        tahun_anggaran: new Date().getFullYear(),
+      });
+
+      toast.success("Paket pengadaan baru berhasil dibuat!");
+      setCreatePaketOpen(false);
+
+      // Refresh pakets
+      const resPakets = await api.get<PaketPengadaan[]>("/paket-pengadaan");
+      setPakets(resPakets.data || []);
+
+      if (res.data?.id) {
+        setFormData((prev) => ({
+          ...prev,
+          paket_id: res.data.id,
+          judul_lelang: prev.judul_lelang || `Lelang ${res.data.nama_paket}`,
+        }));
+      }
+
+      setPaketForm({
+        nama_paket: "",
+        jenis_paket: "tender",
+        jenis_pengadaan: "Barang",
+        nilai_pagu: "",
+        nilai_hps: "",
+        lokasi_pekerjaan: "Jakarta",
+      });
+    } catch (err: any) {
+      toast.error("Gagal membuat paket pengadaan: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmittingPaket(false);
+    }
   };
 
   return (
@@ -478,7 +539,17 @@ function Main() {
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div>
-              <FormLabel>Pilih Paket Pengadaan<span className="text-red-500">*</span></FormLabel>
+              <div className="flex items-center justify-between mb-1">
+                <FormLabel className="mb-0">Pilih Paket Pengadaan<span className="text-red-500">*</span></FormLabel>
+                <button
+                  type="button"
+                  onClick={() => setCreatePaketOpen(true)}
+                  className="text-xs text-primary font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Lucide icon="PlusCircle" className="w-3.5 h-3.5" />
+                  + Buat Paket Baru
+                </button>
+              </div>
               <FormSelect
                 value={formData.paket_id}
                 onChange={(e) => {
@@ -660,6 +731,103 @@ function Main() {
           remixFormattedInput={`${activeBlockchainLelang.id}, "${activeBlockchainLelang.paket?.kode_paket || 'PKT-01'}", "${activeBlockchainLelang.judul_lelang || activeBlockchainLelang.paket?.nama_paket || 'Lelang'}", ${Math.round(Number(activeBlockchainLelang.paket?.nilai_hps || activeBlockchainLelang.paket?.nilai_pagu || 500000000))}, "QmAcquirasKAKDocsSealedOnChain2026", "0x89f1d43a65239e01bc3d2e9b812f4510aa29b9f71c4912e845cba0281987ef12", ${Math.floor(new Date(activeBlockchainLelang.tanggal_mulai).getTime() / 1000)}, ${Math.floor(new Date(activeBlockchainLelang.tanggal_selesai).getTime() / 1000)}`}
         />
       )}
+      {/* Modal Buat Paket Pengadaan Baru */}
+      <Dialog open={createPaketOpen} onClose={() => setCreatePaketOpen(false)} className="relative z-[80]">
+        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-darkmode-400">
+            <Dialog.Title className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Lucide icon="PackagePlus" className="w-5 h-5 text-primary" />
+              Tambah Paket Pengadaan Baru
+            </Dialog.Title>
+            <button onClick={() => setCreatePaketOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <Lucide icon="X" className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleCreatePaket} className="mt-4 space-y-3.5">
+            <div>
+              <FormLabel>Nama Paket Pengadaan<span className="text-red-500">*</span></FormLabel>
+              <FormInput
+                type="text"
+                placeholder="Contoh: Pengadaan 50 Unit Laptop Workstation i7"
+                value={paketForm.nama_paket}
+                onChange={(e) => setPaketForm({ ...paketForm, nama_paket: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <FormLabel>Kategori Pengadaan</FormLabel>
+                <FormSelect
+                  value={paketForm.jenis_paket}
+                  onChange={(e) => setPaketForm({ ...paketForm, jenis_paket: e.target.value })}
+                >
+                  <option value="tender">Tender (Terbuka)</option>
+                  <option value="non tender">Non-Tender (Langsung)</option>
+                </FormSelect>
+              </div>
+
+              <div>
+                <FormLabel>Jenis Komoditas</FormLabel>
+                <FormSelect
+                  value={paketForm.jenis_pengadaan}
+                  onChange={(e) => setPaketForm({ ...paketForm, jenis_pengadaan: e.target.value })}
+                >
+                  <option value="Barang">Barang</option>
+                  <option value="Jasa Konsultansi">Jasa Konsultansi</option>
+                  <option value="Pekerjaan Konstruksi">Pekerjaan Konstruksi</option>
+                  <option value="Jasa Lainnya">Jasa Lainnya</option>
+                </FormSelect>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <FormLabel>Nilai Pagu (Rp)<span className="text-red-500">*</span></FormLabel>
+                <FormInput
+                  type="number"
+                  min="0"
+                  placeholder="Contoh: 500000000"
+                  value={paketForm.nilai_pagu}
+                  onChange={(e) => setPaketForm({ ...paketForm, nilai_pagu: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <FormLabel>Nilai HPS (Rp)</FormLabel>
+                <FormInput
+                  type="number"
+                  min="0"
+                  placeholder="Sama dengan pagu jika kosong"
+                  value={paketForm.nilai_hps}
+                  onChange={(e) => setPaketForm({ ...paketForm, nilai_hps: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <FormLabel>Lokasi Pekerjaan</FormLabel>
+              <FormInput
+                type="text"
+                placeholder="Contoh: Kantor Pusat ACQUIRAS, Jakarta"
+                value={paketForm.lokasi_pekerjaan}
+                onChange={(e) => setPaketForm({ ...paketForm, lokasi_pekerjaan: e.target.value })}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-200/60 dark:border-darkmode-400">
+              <Button type="button" variant="outline-secondary" onClick={() => setCreatePaketOpen(false)}>
+                Batal
+              </Button>
+              <Button type="submit" variant="primary" disabled={submittingPaket}>
+                {submittingPaket ? "Menyimpan..." : "Simpan & Pilih Paket"}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Panel>
+      </Dialog>
     </div>
   );
 }

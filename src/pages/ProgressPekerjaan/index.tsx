@@ -439,7 +439,7 @@ function Main() {
                           setSuratJalanModalOpen(true);
                         }}
                       >
-                        <Lucide icon={selected.no_surat_jalan ? "Edit3" : "Truck"} className="w-3.5 h-3.5 mr-1.5" />
+                        <Lucide icon={selected.no_surat_jalan ? "PenLine" : "Truck"} className="w-3.5 h-3.5 mr-1.5" />
                         {selected.no_surat_jalan ? "Ubah Surat Jalan" : "Terbitkan Surat Jalan"}
                       </Button>
                     )}
