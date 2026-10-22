@@ -110,26 +110,64 @@ export class Web3Service {
   }
 
   /**
+   * Pastikan MetaMask berada pada jaringan yang sesuai (Sepolia / 11155111)
+   */
+  static async ensureTargetNetwork(): Promise<void> {
+    if (!this.isWalletAvailable()) return;
+    const targetChainId = BLOCKCHAIN_CONFIG.chainId || 11155111;
+    const chainIdHex = "0x" + targetChainId.toString(16);
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: chainIdHex }],
+      });
+    } catch (switchError: any) {
+      if (switchError.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: chainIdHex,
+              chainName: BLOCKCHAIN_CONFIG.networkName,
+              rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com", "https://rpc.sepolia.org"],
+              nativeCurrency: { name: "Sepolia ETH", symbol: "ETH", decimals: 18 },
+              blockExplorerUrls: [BLOCKCHAIN_CONFIG.explorerUrl],
+            },
+          ],
+        });
+      }
+    }
+  }
+
+  /**
    * 1. FITUR PUBLISH TENDER ON-CHAIN (publishTender)
    */
   static async publishTenderOnChain(payload: PublishTenderPayload): Promise<TxResult> {
-    const dataHash = payload.dataHash || (await computeSha256(
-      JSON.stringify({
-        id: payload.tenderId,
-        kode: payload.kodePaket,
-        nama: payload.namaPaket,
-        hps: payload.nilaiHps,
-        kak: payload.ipfsKakCid,
-      })
-    ));
+    await this.ensureTargetNetwork();
 
-    const tglMulai = typeof payload.tanggalMulai === "number"
+    let dataHash = payload.dataHash;
+    if (!dataHash || dataHash.length !== 66) {
+      dataHash = await computeSha256(
+        JSON.stringify({
+          id: payload.tenderId,
+          kode: payload.kodePaket,
+          nama: payload.namaPaket,
+          hps: payload.nilaiHps,
+          kak: payload.ipfsKakCid,
+        })
+      );
+    }
+    if (!dataHash.startsWith("0x")) dataHash = "0x" + dataHash;
+    dataHash = dataHash.padEnd(66, "0").slice(0, 66);
+
+    const tglMulai = typeof payload.tanggalMulai === "number" && !isNaN(payload.tanggalMulai)
       ? payload.tanggalMulai
-      : Math.floor(new Date(payload.tanggalMulai).getTime() / 1000);
+      : Math.floor(Date.now() / 1000);
 
-    const tglSelesai = typeof payload.tanggalSelesai === "number"
+    const tglSelesai = typeof payload.tanggalSelesai === "number" && !isNaN(payload.tanggalSelesai)
       ? payload.tanggalSelesai
-      : Math.floor(new Date(payload.tanggalSelesai).getTime() / 1000);
+      : Math.floor(Date.now() / 1000) + 86400 * 14;
 
     const ipfsCid = payload.ipfsKakCid || "QmAcquirasKAKDocsSealedOnChain2026";
 
@@ -143,7 +181,8 @@ export class Web3Service {
       ipfsCid,
       dataHash,
       BigInt(tglMulai),
-      BigInt(tglSelesai)
+      BigInt(tglSelesai),
+      { gasLimit: 2500000n }
     );
 
     const receipt = await tx.wait();

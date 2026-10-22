@@ -189,8 +189,14 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
         await verifyWithOnChainState();
       }
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.reason || err.message || "Gagal memproses transaksi di MetaMask.");
+      console.error("MetaMask execution error:", err);
+      let errorMsg = err.reason || err.shortMessage || err.message || "Gagal memproses transaksi di MetaMask.";
+      if (errorMsg.includes("require(false)") || errorMsg.includes("missing revert data")) {
+        errorMsg = "Transaksi ditolak. Pastikan MetaMask berada pada jaringan Sepolia dan menggunakan akun pemilik kontrak (0x28523...).";
+      } else if (err.code === "ACTION_REJECTED" || errorMsg.toLowerCase().includes("rejected")) {
+        errorMsg = "Transaksi dibatalkan di jendela MetaMask.";
+      }
+      toast.error(errorMsg);
     } finally {
       setSendingToChain(false);
     }
@@ -323,7 +329,7 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
         <div className="mt-4 p-4 bg-slate-900 rounded-xl text-xs font-mono text-slate-300 space-y-2 border border-slate-800">
           <div className="flex justify-between items-center text-[11px] border-b border-slate-800 pb-2">
             <span className="text-slate-400">Jaringan Target:</span>
-            <span className="text-cyan-400 font-bold">{BLOCKCHAIN_CONFIG.networkName} (Chain ID: 80002)</span>
+            <span className="text-cyan-400 font-bold">{BLOCKCHAIN_CONFIG.networkName} (Chain ID: {BLOCKCHAIN_CONFIG.chainId})</span>
           </div>
           <div className="flex justify-between items-center text-[11px]">
             <span className="text-slate-400">Wallet Signer (MetaMask):</span>
