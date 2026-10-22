@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
 import { BlockchainBidModal } from "@/components/Blockchain/BlockchainBidModal";
 import { BlockchainAwardModal } from "@/components/Blockchain/BlockchainAwardModal";
-import { BlockchainVerifyDocModal } from "@/components/Blockchain/BlockchainVerifyDocModal";
 import { Web3Service } from "@/utils/web3Client";
 import { BLOCKCHAIN_CONFIG, formatAddress, getExplorerAddressUrl, getExplorerTxUrl, computeSha256 } from "@/config/blockchain";
 
@@ -30,10 +29,9 @@ const ShowDetailVendor: React.FC = () => {
   const [blockchainBidModalOpen, setBlockchainBidModalOpen] = useState<boolean>(false);
   const [selectedBidVendor, setSelectedBidVendor] = useState<{ id: number; nama: string; harga: number } | null>(null);
 
-  // Modal Penetapan Pemenang (awardWinner) & Verifikasi Dokumen TTE
+  // Modal Penetapan Pemenang (awardWinner)
   const [awardModalOpen, setAwardModalOpen] = useState<boolean>(false);
   const [selectedAwardCandidate, setSelectedAwardCandidate] = useState<{ id: number; nama: string; harga: number; pesertaId?: number } | null>(null);
-  const [verifyDocModalOpen, setVerifyDocModalOpen] = useState<boolean>(false);
 
   // Modal Daftar/Ikuti Lelang
   const [bidModalOpen, setBidModalOpen] = useState(false);
@@ -298,40 +296,10 @@ const ShowDetailVendor: React.FC = () => {
               </div>
             </div>
 
-            {/* Aksi Header - Berukuran Selaras h-10, Solid, Tidak Transparan */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Tombol TTE Verifier Dokumen (Solid Indigo) */}
-              <button
-                type="button"
-                onClick={() => setVerifyDocModalOpen(true)}
-                className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
-                title="Verifikasi Dokumen atau Tanda Tangan Elektronik On-Chain"
-              >
-                <Lucide icon="FileCheck" className="w-4 h-4 text-indigo-100" />
-                <span>Uji Dokumen (TTE Verifier)</span>
-              </button>
-
-              {/* Aksi Berdasarkan Peran Pengguna (Role-based Action) */}
-              {isAdmin ? (
-                <>
-                  <div className="h-10 px-4 rounded-lg bg-slate-900 text-slate-100 border border-slate-700 font-bold text-xs shadow-md inline-flex items-center justify-center gap-2 whitespace-nowrap">
-                    <Lucide icon="Shield" className="w-4 h-4 text-primary" />
-                    <span>Mode Panitia / Evaluator</span>
-                  </div>
-
-                  {lelang.status !== "Selesai" && (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/dashboard/master-lelang/edit/${id}`)}
-                      className="h-10 px-4 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
-                    >
-                      <Lucide icon="PenLine" className="w-4 h-4" />
-                      <span>Ubah Lelang</span>
-                    </button>
-                  )}
-                </>
-              ) : isVendor ? (
-                onChainBid && Number(onChainBid.submittedAt) > 0 ? (
+            {/* Aksi Header - Hanya tampil untuk Vendor yang berhak mendaftar / mengirim penawaran */}
+            {isVendor && (
+              <div className="flex flex-wrap items-center gap-2">
+                {onChainBid && Number(onChainBid.submittedAt) > 0 ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -382,9 +350,9 @@ const ShowDetailVendor: React.FC = () => {
                     <Lucide icon="Send" className="w-4 h-4" />
                     <span>Ikuti Lelang & Tawar</span>
                   </button>
-                )
-              ) : null}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -926,15 +894,6 @@ const ShowDetailVendor: React.FC = () => {
           onWinnerAwardedOnChain={handleWinnerAwarded}
         />
       )}
-
-      {/* Modal Verifikasi Dokumen TTE Keaslian On-Chain */}
-      <BlockchainVerifyDocModal
-        open={verifyDocModalOpen}
-        onClose={() => setVerifyDocModalOpen(false)}
-        defaultRefId={Number(id)}
-        defaultDocType="DOKUMEN_LELANG"
-        defaultSignerName={currentUser?.name || "Panitia Pengadaan ACQUIRAS"}
-      />
     </div>
   );
 };
