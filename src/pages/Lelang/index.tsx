@@ -5,7 +5,7 @@ import Button from "@/components/Base/Button";
 import Table from "@/components/Base/Table";
 import clsx from "clsx";
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/api/axiosinstance";
 import { BlockchainActionModal } from "@/components/Blockchain/BlockchainActionModal";
@@ -406,11 +406,24 @@ function Main() {
                     <Table.Tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-darkmode-500">
                       <Table.Td className="py-4 border-dashed">{idx + 1}</Table.Td>
                       <Table.Td className="py-4 border-dashed">
-                        <div className="font-semibold text-slate-800 dark:text-slate-100">
-                          {item.judul_lelang}
-                        </div>
-                        <div className="text-xs font-mono text-primary font-medium mt-0.5">
-                          {item.no_lelang}
+                        <Link
+                          to={`/dashboard/master-lelang/${item.id}`}
+                          className="font-semibold text-slate-800 dark:text-slate-100 hover:text-primary transition-colors flex items-center gap-1.5 group"
+                          title="Klik untuk melihat detail lelang & daftar rekanan/peserta"
+                        >
+                          <span>{item.judul_lelang}</span>
+                          <Lucide icon="ExternalLink" className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary transition-colors shrink-0" />
+                        </Link>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-mono text-primary font-medium">
+                            {item.no_lelang}
+                          </span>
+                          {item.peserta && item.peserta.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                              <Lucide icon="Users" className="w-3 h-3" />
+                              {item.peserta.length} Rekanan
+                            </span>
+                          )}
                         </div>
                       </Table.Td>
                       <Table.Td className="py-4 border-dashed text-xs">
@@ -480,6 +493,13 @@ function Main() {
                       </Table.Td>
                       <Table.Td className="py-4 border-dashed text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => navigate(`/dashboard/master-lelang/${item.id}`)}
+                            className="p-1.5 rounded hover:bg-blue-50 text-blue-600 dark:hover:bg-darkmode-400 transition"
+                            title="Lihat Daftar Rekanan/Peserta & Tetapkan Pemenang"
+                          >
+                            <Lucide icon="Eye" className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => {
                               setActiveBlockchainLelang(item);

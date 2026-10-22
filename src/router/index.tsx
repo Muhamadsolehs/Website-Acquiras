@@ -125,7 +125,7 @@ function Router() {
         },
         {
           path: "master-lelang/:id",
-          element: <ShowDetailLelang />,
+          element: <ShowLelangVendor />,
         },
         {
           path: "lelang/show/:id",
@@ -137,7 +137,7 @@ function Router() {
         },
         {
           path: "master-lelang/show/:id",
-          element: <ShowDetailLelang />,
+          element: <ShowLelangVendor />,
         },
         {
           path: "pemohon/add",
