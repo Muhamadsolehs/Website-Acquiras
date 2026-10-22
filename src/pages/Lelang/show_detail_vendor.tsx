@@ -86,11 +86,15 @@ const ShowDetailVendor: React.FC = () => {
         setOnChainTender(null);
       }
 
-      // 2. Baca data Bid Vendor on-chain jika vendorId tersedia
-      const vId = userVendorId || currentUser?.vendor?.id || 1;
-      const bidData = await Web3Service.getBidOnChain(Number(id), Number(vId));
-      if (bidData && Number(bidData.submittedAt) > 0) {
-        setOnChainBid(bidData);
+      // 2. Baca data Bid Vendor on-chain HANYA jika pengguna adalah akun vendor
+      const vId = userVendorId || currentUser?.vendor?.id;
+      if (vId) {
+        const bidData = await Web3Service.getBidOnChain(Number(id), Number(vId));
+        if (bidData && Number(bidData.submittedAt) > 0) {
+          setOnChainBid(bidData);
+        } else {
+          setOnChainBid(null);
+        }
       } else {
         setOnChainBid(null);
       }
@@ -231,13 +235,14 @@ const ShowDetailVendor: React.FC = () => {
   const paket = lelang.paket || {};
   const satker = paket.satker || {};
   const pesertaList = lelang.peserta || [];
-  const userVendorId = currentUser?.vendor?.id || 1;
-  const myPeserta = pesertaList.find((p: any) => p.vendor_id === userVendorId);
+  const userVendorId = currentUser?.vendor?.id;
+  const myPeserta = userVendorId ? pesertaList.find((p: any) => p.vendor_id === userVendorId) : null;
   const isAlreadyRegistered = Boolean(myPeserta);
   const myPenawaranHarga = myPeserta ? Number(myPeserta.nilai_penawaran || 0) : 0;
 
   const userRole = (currentUser?.role || "").toLowerCase();
-  const isAdmin = userRole.includes("admin") || userRole.includes("panitia") || userRole.includes("ppk") || !currentUser?.vendor;
+  const isVendor = Boolean(currentUser?.vendor) || userRole === "vendor";
+  const isAdmin = !isVendor || userRole.includes("admin") || userRole.includes("panitia") || userRole.includes("ppk");
 
   const handleWinnerAwarded = async (result: any) => {
     try {
@@ -304,58 +309,78 @@ const ShowDetailVendor: React.FC = () => {
               Uji Dokumen (TTE Verifier)
             </Button>
 
-            {onChainBid && Number(onChainBid.submittedAt) > 0 ? (
-              <Button
-                variant="outline-secondary"
-                className="bg-emerald-600/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-600/30"
-                onClick={() => {
-                  setSelectedBidVendor({
-                    id: userVendorId,
-                    nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
-                    harga: Number(onChainBid.penawaranHarga),
-                  });
-                  setBlockchainBidModalOpen(true);
-                }}
-              >
-                <Lucide icon="ShieldCheck" className="w-4 h-4 mr-2 text-emerald-400" />
-                Penawaran Tersegel On-Chain
-              </Button>
-            ) : isAlreadyRegistered ? (
-              <div className="flex gap-2">
+            {/* Aksi Berdasarkan Peran Pengguna (Role-based Action) */}
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800/60 text-slate-200 border border-white/10">
+                  <Lucide icon="Shield" className="w-3.5 h-3.5 text-primary" />
+                  Mode Panitia / Evaluator
+                </span>
+                {lelang.status !== "Selesai" && (
+                  <Button
+                    variant="outline-secondary"
+                    className="bg-white/10 text-white border-white/20 hover:bg-white/20 text-xs"
+                    onClick={() => navigate(`/dashboard/master-lelang/edit/${id}`)}
+                  >
+                    <Lucide icon="PenLine" className="w-3.5 h-3.5 mr-1.5" />
+                    Ubah Lelang
+                  </Button>
+                )}
+              </div>
+            ) : isVendor ? (
+              onChainBid && Number(onChainBid.submittedAt) > 0 ? (
                 <Button
                   variant="outline-secondary"
-                  className="bg-blue-600/20 text-blue-300 border-blue-500/40"
-                  onClick={() => toast.info("Anda sudah terdaftar sebagai peserta pada lelang ini.")}
-                >
-                  <Lucide icon="CheckCircle" className="w-4 h-4 mr-2" />
-                  Sudah Terdaftar
-                </Button>
-                <Button
-                  variant="primary"
-                  className="bg-amber-600 hover:bg-amber-500 text-white"
+                  className="bg-emerald-600/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-600/30"
                   onClick={() => {
                     setSelectedBidVendor({
                       id: userVendorId,
                       nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
-                      harga: myPenawaranHarga,
+                      harga: Number(onChainBid.penawaranHarga),
                     });
                     setBlockchainBidModalOpen(true);
                   }}
                 >
-                  <Lucide icon="Lock" className="w-4 h-4 mr-2" />
-                  Segel ke Blockchain
+                  <Lucide icon="ShieldCheck" className="w-4 h-4 mr-2 text-emerald-400" />
+                  Penawaran Tersegel On-Chain
                 </Button>
-              </div>
-            ) : (
-              <Button
-                variant="primary"
-                className="bg-primary text-white"
-                onClick={() => setBidModalOpen(true)}
-              >
-                <Lucide icon="Send" className="w-4 h-4 mr-2" />
-                Ikuti Lelang & Tawar
-              </Button>
-            )}
+              ) : isAlreadyRegistered ? (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline-secondary"
+                    className="bg-blue-600/20 text-blue-300 border-blue-500/40"
+                    onClick={() => toast.info("Anda sudah terdaftar sebagai peserta pada lelang ini.")}
+                  >
+                    <Lucide icon="CheckCircle" className="w-4 h-4 mr-2" />
+                    Sudah Terdaftar
+                  </Button>
+                  <Button
+                    variant="primary"
+                    className="bg-amber-600 hover:bg-amber-500 text-white"
+                    onClick={() => {
+                      setSelectedBidVendor({
+                        id: userVendorId,
+                        nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
+                        harga: myPenawaranHarga,
+                      });
+                      setBlockchainBidModalOpen(true);
+                    }}
+                  >
+                    <Lucide icon="Lock" className="w-4 h-4 mr-2" />
+                    Segel ke Blockchain
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="primary"
+                  className="bg-primary text-white"
+                  onClick={() => setBidModalOpen(true)}
+                >
+                  <Lucide icon="Send" className="w-4 h-4 mr-2" />
+                  Ikuti Lelang & Tawar
+                </Button>
+              )
+            ) : null}
           </div>
         </div>
 
