@@ -201,14 +201,21 @@ export class Web3Service {
    * 2. FITUR SUBMIT PENAWARAN ON-CHAIN (submitBid)
    */
   static async submitBidOnChain(payload: SubmitBidPayload): Promise<TxResult> {
-    const penawaranHash = payload.penawaranHash || (await computeSha256(
-      JSON.stringify({
-        tenderId: payload.tenderId,
-        vendorId: payload.vendorId,
-        harga: payload.penawaranHarga,
-        doc: payload.ipfsDokumenPenawaran,
-      })
-    ));
+    await this.ensureTargetNetwork();
+
+    let penawaranHash = payload.penawaranHash;
+    if (!penawaranHash || penawaranHash.length !== 66) {
+      penawaranHash = await computeSha256(
+        JSON.stringify({
+          tenderId: payload.tenderId,
+          vendorId: payload.vendorId,
+          harga: payload.penawaranHarga,
+          doc: payload.ipfsDokumenPenawaran,
+        })
+      );
+    }
+    if (!penawaranHash.startsWith("0x")) penawaranHash = "0x" + penawaranHash;
+    penawaranHash = penawaranHash.padEnd(66, "0").slice(0, 66);
 
     const { contract } = await this.getContractWithSigner();
 
@@ -217,7 +224,8 @@ export class Web3Service {
       BigInt(payload.vendorId),
       BigInt(Math.round(payload.penawaranHarga)),
       payload.ipfsDokumenPenawaran || "QmBidDocsEncrypted2026",
-      penawaranHash
+      penawaranHash,
+      { gasLimit: 2500000n }
     );
 
     const receipt = await tx.wait();
@@ -236,13 +244,16 @@ export class Web3Service {
    * 3. FITUR PENETAPAN PEMENANG (awardWinner)
    */
   static async awardWinnerOnChain(payload: AwardWinnerPayload): Promise<TxResult> {
+    await this.ensureTargetNetwork();
+
     const { contract } = await this.getContractWithSigner();
 
     const tx = await contract.awardWinner(
       BigInt(payload.tenderId),
       BigInt(payload.winnerVendorId),
       BigInt(Math.round(payload.finalPrice)),
-      payload.ipfsBeritaAcara || "QmBeritaAcaraPemenangLelang2026"
+      payload.ipfsBeritaAcara || "QmBeritaAcaraPemenangLelang2026",
+      { gasLimit: 2500000n }
     );
 
     const receipt = await tx.wait();
@@ -260,14 +271,21 @@ export class Web3Service {
    * 4. FITUR DIGITAL SIGNATURE / TTE KONTRAK (recordSignature)
    */
   static async recordSignatureOnChain(payload: RecordSignaturePayload): Promise<TxResult> {
+    await this.ensureTargetNetwork();
+
+    let docHash = payload.documentHash;
+    if (!docHash.startsWith("0x")) docHash = "0x" + docHash;
+    docHash = docHash.padEnd(66, "0").slice(0, 66);
+
     const { contract } = await this.getContractWithSigner();
 
     const tx = await contract.recordSignature(
       BigInt(payload.refId),
       payload.docType,
-      payload.documentHash,
+      docHash,
       payload.signerName,
-      payload.bsreCertId
+      payload.bsreCertId,
+      { gasLimit: 2500000n }
     );
 
     const receipt = await tx.wait();
@@ -277,7 +295,7 @@ export class Web3Service {
       txHash: tx.hash,
       blockNumber: receipt?.blockNumber,
       explorerUrl: `${BLOCKCHAIN_CONFIG.explorerUrl}/tx/${tx.hash}`,
-      dataHash: payload.documentHash,
+      dataHash: docHash,
       message: "TTE & Hash Dokumen Kontrak resmi diverifikasi on-chain!",
     };
   }
@@ -286,12 +304,15 @@ export class Web3Service {
    * 5. FITUR PERSETUJUAN PEMBAYARAN TERMIN (approveMilestonePayment)
    */
   static async approveMilestonePaymentOnChain(payload: ApproveMilestonePayload): Promise<TxResult> {
+    await this.ensureTargetNetwork();
+
     const { contract } = await this.getContractWithSigner();
 
     const tx = await contract.approveMilestonePayment(
       BigInt(payload.kontrakId),
       payload.terminKe,
-      payload.noSpb
+      payload.noSpb,
+      { gasLimit: 2500000n }
     );
 
     const receipt = await tx.wait();
@@ -306,10 +327,61 @@ export class Web3Service {
   }
 
   /**
+   * Helper untuk membuat read-only contract instance dengan fallback Public Sepolia RPC
+   */
+  static getReadOnlyContract(): ethers.Contract {
+    let provider: ethers.Provider;
+    if (this.isWalletAvailable()) {
+      provider = new ethers.BrowserProvider(window.ethereum);
+    } else {
+      provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+    }
+    return new ethers.Contract(BLOCKCHAIN_CONFIG.contractAddress, ACQUIRAS_CONTRACT_ABI, provider);
+  }
+
+  /**
    * BACA DATA TENDER LANGSUNG DARI SMART CONTRACT (getTender)
    */
   static async getTenderOnChain(tenderId: number) {
-    const { contract } = await this.getContractWithSigner();
-    return await contract.getTender(BigInt(tenderId));
+    try {
+      const contract = this.getReadOnlyContract();
+      return await contract.getTender(BigInt(tenderId));
+    } catch {
+      const publicProvider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+      const publicContract = new ethers.Contract(BLOCKCHAIN_CONFIG.contractAddress, ACQUIRAS_CONTRACT_ABI, publicProvider);
+      return await publicContract.getTender(BigInt(tenderId));
+    }
+  }
+
+  /**
+   * BACA DATA PENAWARAN VENDOR LANGSUNG DARI SMART CONTRACT (getBid)
+   */
+  static async getBidOnChain(tenderId: number, vendorId: number) {
+    try {
+      const contract = this.getReadOnlyContract();
+      return await contract.getBid(BigInt(tenderId), BigInt(vendorId));
+    } catch {
+      const publicProvider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+      const publicContract = new ethers.Contract(BLOCKCHAIN_CONFIG.contractAddress, ACQUIRAS_CONTRACT_ABI, publicProvider);
+      return await publicContract.getBid(BigInt(tenderId), BigInt(vendorId));
+    }
+  }
+
+  /**
+   * VERIFIKASI KEASLIAN HASH DOKUMEN (verifyDocumentHash)
+   */
+  static async verifyDocumentHashOnChain(documentHash: string): Promise<boolean> {
+    let hash = documentHash;
+    if (!hash.startsWith("0x")) hash = "0x" + hash;
+    hash = hash.padEnd(66, "0").slice(0, 66);
+
+    try {
+      const contract = this.getReadOnlyContract();
+      return await contract.verifyDocumentHash(hash);
+    } catch {
+      const publicProvider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+      const publicContract = new ethers.Contract(BLOCKCHAIN_CONFIG.contractAddress, ACQUIRAS_CONTRACT_ABI, publicProvider);
+      return await publicContract.verifyDocumentHash(hash);
+    }
   }
 }

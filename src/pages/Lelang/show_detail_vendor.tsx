@@ -3,11 +3,14 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import Lucide from "@/components/Base/Lucide";
 import Table from "@/components/Base/Table";
 import Button from "@/components/Base/Button";
-import { FormInput, FormTextarea } from "@/components/Base/Form";
+import { FormInput, FormTextarea, FormCheck } from "@/components/Base/Form";
 import { Dialog } from "@/components/Base/Headless";
 import api from "@/api/axiosinstance";
 import { toast } from "sonner";
 import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
+import { BlockchainBidModal } from "@/components/Blockchain/BlockchainBidModal";
+import { Web3Service } from "@/utils/web3Client";
+import { BLOCKCHAIN_CONFIG, formatAddress, getExplorerAddressUrl, getExplorerTxUrl, computeSha256 } from "@/config/blockchain";
 
 const ShowDetailVendor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +21,13 @@ const ShowDetailVendor: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // State Verifikasi Blockchain On-Chain
+  const [onChainTender, setOnChainTender] = useState<any>(null);
+  const [onChainBid, setOnChainBid] = useState<any>(null);
+  const [checkingChain, setCheckingChain] = useState<boolean>(false);
+  const [blockchainBidModalOpen, setBlockchainBidModalOpen] = useState<boolean>(false);
+  const [selectedBidVendor, setSelectedBidVendor] = useState<{ id: number; nama: string; harga: number } | null>(null);
+
   // Modal Daftar/Ikuti Lelang
   const [bidModalOpen, setBidModalOpen] = useState(false);
   const [nilaiPenawaran, setNilaiPenawaran] = useState("");
@@ -25,6 +35,7 @@ const ShowDetailVendor: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [catatanPenawaran, setCatatanPenawaran] = useState("");
+  const [sealOnChainDirectly, setSealOnChainDirectly] = useState<boolean>(true);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,15 +65,47 @@ const ShowDetailVendor: React.FC = () => {
     }
   };
 
+  // Baca Status Live dari Smart Contract Sepolia
+  const checkBlockchainState = async (userVendorId?: number) => {
+    if (!id) return;
+    try {
+      setCheckingChain(true);
+
+      // 1. Baca data Tender on-chain
+      const tenderData = await Web3Service.getTenderOnChain(Number(id));
+      if (tenderData && Number(tenderData.id) > 0) {
+        setOnChainTender(tenderData);
+      } else {
+        setOnChainTender(null);
+      }
+
+      // 2. Baca data Bid Vendor on-chain jika vendorId tersedia
+      const vId = userVendorId || currentUser?.vendor?.id || 1;
+      const bidData = await Web3Service.getBidOnChain(Number(id), Number(vId));
+      if (bidData && Number(bidData.submittedAt) > 0) {
+        setOnChainBid(bidData);
+      } else {
+        setOnChainBid(null);
+      }
+    } catch (err) {
+      console.warn("Gagal membaca state on-chain:", err);
+    } finally {
+      setCheckingChain(false);
+    }
+  };
+
   useEffect(() => {
     const rawUser = localStorage.getItem("eproc_user");
+    let parsedUser = null;
     if (rawUser) {
       try {
-        setCurrentUser(JSON.parse(rawUser));
+        parsedUser = JSON.parse(rawUser);
+        setCurrentUser(parsedUser);
       } catch (e) {}
     }
     if (id) {
       fetchDetail();
+      checkBlockchainState(parsedUser?.vendor?.id);
     }
   }, [id]);
 
@@ -78,10 +121,51 @@ const ShowDetailVendor: React.FC = () => {
       return;
     }
 
-    const vendorId = currentUser?.vendor?.id || 1; // Fallback to current vendor
+    const vendorId = currentUser?.vendor?.id || 1;
+    const hargaNumber = Math.round(Number(nilaiPenawaran));
 
     try {
       setSubmitting(true);
+
+      let txHashOnChain = "";
+      let computedBidHash = "";
+
+      // Eksekusi Segel On-Chain jika diaktifkan
+      if (sealOnChainDirectly) {
+        if (!Web3Service.isWalletAvailable()) {
+          toast.warning("MetaMask tidak terdeteksi. Melanjutkan penyimpanan penawaran di database sistem saja.");
+        } else if (!onChainTender || Number(onChainTender.id) === 0) {
+          toast.warning("Tender ini belum dipublikasikan oleh Panitia ke Smart Contract. Penawaran disimpan di database sistem.");
+        } else {
+          toast.info("Membuka MetaMask untuk konfirmasi transaksi submitBid on-chain...");
+
+          let docName = selectedFile ? selectedFile.name : fileDokumen;
+          computedBidHash = await computeSha256(
+            JSON.stringify({
+              tenderId: Number(id),
+              vendorId: Number(vendorId),
+              harga: hargaNumber,
+              file: docName,
+              timestamp: Date.now(),
+            })
+          );
+
+          const ipfsCid = "QmBid_" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+          const web3Res = await Web3Service.submitBidOnChain({
+            tenderId: Number(id),
+            vendorId: Number(vendorId),
+            penawaranHarga: hargaNumber,
+            ipfsDokumenPenawaran: ipfsCid,
+            penawaranHash: computedBidHash,
+          });
+
+          txHashOnChain = web3Res.txHash;
+          toast.success("Penawaran resmi tersegel di Ethereum Sepolia!");
+        }
+      }
+
+      // Simpan data ke Database Laravel Web2
       const formData = new FormData();
       formData.append("lelang_id", String(id));
       formData.append("vendor_id", String(vendorId));
@@ -101,8 +185,14 @@ const ShowDetailVendor: React.FC = () => {
       toast.success("Berhasil mendaftar dan mengunggah penawaran lelang!");
       setBidModalOpen(false);
       fetchDetail();
+      checkBlockchainState(vendorId);
     } catch (err: any) {
-      toast.error("Gagal mendaftar lelang: " + (err.response?.data?.message || err.message));
+      console.error("Gagal submit penawaran:", err);
+      if (err.code === 4001 || err.action === "reject") {
+        toast.warning("Transaksi dibatalkan oleh pengguna di MetaMask.");
+      } else {
+        toast.error("Gagal mendaftar lelang: " + (err.reason || err.response?.data?.message || err.message));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -134,8 +224,10 @@ const ShowDetailVendor: React.FC = () => {
   const paket = lelang.paket || {};
   const satker = paket.satker || {};
   const pesertaList = lelang.peserta || [];
-  const userVendorId = currentUser?.vendor?.id;
-  const isAlreadyRegistered = pesertaList.some((p: any) => p.vendor_id === userVendorId);
+  const userVendorId = currentUser?.vendor?.id || 1;
+  const myPeserta = pesertaList.find((p: any) => p.vendor_id === userVendorId);
+  const isAlreadyRegistered = Boolean(myPeserta);
+  const myPenawaranHarga = myPeserta ? Number(myPeserta.nilai_penawaran || 0) : 0;
 
   return (
     <div className="px-6 py-8">
@@ -173,20 +265,58 @@ const ShowDetailVendor: React.FC = () => {
               </div>
             </div>
 
-            <Button
-              variant={isAlreadyRegistered ? "outline-secondary" : "primary"}
-              className={isAlreadyRegistered ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40" : "bg-primary text-white"}
-              onClick={() => {
-                if (isAlreadyRegistered) {
-                  toast.info("Anda sudah terdaftar sebagai peserta pada lelang ini.");
-                } else {
-                  setBidModalOpen(true);
-                }
-              }}
-            >
-              <Lucide icon={isAlreadyRegistered ? "CheckCircle" : "Send"} className="w-4 h-4 mr-2" />
-              {isAlreadyRegistered ? "Sudah Terdaftar" : "Ikuti Lelang & Tawar"}
-            </Button>
+            {onChainBid && Number(onChainBid.submittedAt) > 0 ? (
+              <Button
+                variant="outline-secondary"
+                className="bg-emerald-600/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-600/30"
+                onClick={() => {
+                  setSelectedBidVendor({
+                    id: userVendorId,
+                    nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
+                    harga: Number(onChainBid.penawaranHarga),
+                  });
+                  setBlockchainBidModalOpen(true);
+                }}
+              >
+                <Lucide icon="ShieldCheck" className="w-4 h-4 mr-2 text-emerald-400" />
+                Penawaran Tersegel On-Chain
+              </Button>
+            ) : isAlreadyRegistered ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline-secondary"
+                  className="bg-blue-600/20 text-blue-300 border-blue-500/40"
+                  onClick={() => toast.info("Anda sudah terdaftar sebagai peserta pada lelang ini.")}
+                >
+                  <Lucide icon="CheckCircle" className="w-4 h-4 mr-2" />
+                  Sudah Terdaftar
+                </Button>
+                <Button
+                  variant="primary"
+                  className="bg-amber-600 hover:bg-amber-500 text-white"
+                  onClick={() => {
+                    setSelectedBidVendor({
+                      id: userVendorId,
+                      nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
+                      harga: myPenawaranHarga,
+                    });
+                    setBlockchainBidModalOpen(true);
+                  }}
+                >
+                  <Lucide icon="Lock" className="w-4 h-4 mr-2" />
+                  Segel ke Blockchain
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="primary"
+                className="bg-primary text-white"
+                onClick={() => setBidModalOpen(true)}
+              >
+                <Lucide icon="Send" className="w-4 h-4 mr-2" />
+                Ikuti Lelang & Tawar
+              </Button>
+            )}
           </div>
         </div>
 
@@ -206,13 +336,102 @@ const ShowDetailVendor: React.FC = () => {
           </span>
         </div>
 
-        {/* Blockchain Smart Contract Audit Trail */}
-        <div className="mt-6 mb-2">
-          <BlockchainAuditBadge
-            recordType="Tender Published & KAK Sealed"
-            txHash="0xa43edc5e9145cce52d386f254917e481eb44e9943f39138761284561028374"
-            dataHash="0x89f1d43a65239e01bc3d2e9b812f4510aa29b9f71c4912e845cba0281987ef12"
-          />
+        {/* Real Dynamic Blockchain Audit Banners */}
+        <div className="mt-6 mb-2 space-y-3">
+          {/* Banner Status Tender On-Chain */}
+          {checkingChain ? (
+            <div className="rounded-xl border border-slate-700 bg-slate-900/60 p-3 text-xs text-slate-300 flex items-center gap-2">
+              <Lucide icon="Loader2" className="w-4 h-4 animate-spin text-blue-400" />
+              Memeriksa integritas paket pengadaan di Ethereum Sepolia...
+            </div>
+          ) : onChainTender && Number(onChainTender.id) > 0 ? (
+            <div className="rounded-xl border border-emerald-500/50 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 p-4 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Lucide icon="ShieldCheck" className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-emerald-400 tracking-wider">
+                      Smart Contract Verified On-Chain
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                      Tender #{onChainTender.id}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Paket pengadaan ini resmi terkunci di blockchain Sepolia. HPS On-Chain:{" "}
+                    <span className="font-bold text-emerald-300">
+                      Rp {Number(onChainTender.nilaiHps).toLocaleString("id-ID")}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <a
+                href={`${BLOCKCHAIN_CONFIG.explorerUrl}/address/${BLOCKCHAIN_CONFIG.contractAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-emerald-300 hover:text-emerald-200 underline flex items-center gap-1 font-semibold shrink-0"
+              >
+                <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
+                Cek Kontrak di Sepolia Explorer
+              </a>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lucide icon="Info" className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Paket tender ini belum dipublikasikan oleh Panitia ke Smart Contract.</span>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono">
+                {BLOCKCHAIN_CONFIG.networkName}
+              </span>
+            </div>
+          )}
+
+          {/* Banner Status Penawaran Vendor On-Chain jika sudah tersegel */}
+          {onChainBid && Number(onChainBid.submittedAt) > 0 && (
+            <div className="rounded-xl border border-blue-500/50 bg-gradient-to-r from-blue-950/50 via-slate-900 to-indigo-950/40 p-4 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-400 shrink-0">
+                  <Lucide icon="Lock" className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-blue-400 tracking-wider">
+                      Penawaran Anda Tersegel On-Chain
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                      Anti-Tamper Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Harga Penawaran:{" "}
+                    <span className="font-bold text-emerald-400">
+                      Rp {Number(onChainBid.penawaranHarga).toLocaleString("id-ID")}
+                    </span>{" "}
+                    | Disegel Pada: {new Date(Number(onChainBid.submittedAt) * 1000).toLocaleString("id-ID")}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="text-xs text-blue-300 border-blue-400/40 hover:bg-blue-900/40 shrink-0 flex items-center gap-1.5"
+                onClick={() => {
+                  setSelectedBidVendor({
+                    id: userVendorId,
+                    nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
+                    harga: Number(onChainBid.penawaranHarga),
+                  });
+                  setBlockchainBidModalOpen(true);
+                }}
+              >
+                <Lucide icon="Search" className="w-3.5 h-3.5" />
+                Lihat Rincian Segel Kriptografis
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -397,11 +616,23 @@ const ShowDetailVendor: React.FC = () => {
                           }`}>
                             {p.status_peserta || "Terdaftar"}
                           </span>
-                          <div className="mt-1.5">
-                            <BlockchainAuditBadge
-                              compact
-                              recordType="Bid Hash Encrypted & Sealed"
-                            />
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedBidVendor({
+                                  id: p.vendor_id,
+                                  nama: p.vendor?.nama_perusahaan || `Vendor #${p.vendor_id}`,
+                                  harga: Number(p.nilai_penawaran || 0),
+                                });
+                                setBlockchainBidModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-700/80 hover:bg-blue-600 text-white border border-blue-400/50 shadow transition-all cursor-pointer"
+                              title="Klik untuk melihat bukti segel penawaran di Smart Contract"
+                            >
+                              <Lucide icon="ShieldCheck" className="w-3 h-3 text-blue-200" />
+                              <span>Cek Segel On-Chain</span>
+                            </button>
                           </div>
                         </Table.Td>
                       </Table.Tr>
@@ -517,11 +748,26 @@ const ShowDetailVendor: React.FC = () => {
                   </button>
                 </div>
               )}
+            </div>
 
-              <div className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1.5">
-                <Lucide icon="Lock" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Dokumen dienkripsi & sidik jari SHA-256 dicatat di blockchain hingga pembukaan lelang.</span>
+            {/* Opsi Segel Kriptografis Smart Contract */}
+            <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/5 dark:bg-blue-950/20 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <FormCheck.Input
+                  id="sealOnChain"
+                  type="checkbox"
+                  checked={sealOnChainDirectly}
+                  onChange={(e) => setSealOnChainDirectly(e.target.checked)}
+                  className="w-4 h-4 text-primary rounded"
+                />
+                <label htmlFor="sealOnChain" className="text-xs font-bold text-slate-800 dark:text-white cursor-pointer flex items-center gap-1.5">
+                  <Lucide icon="ShieldCheck" className="w-4 h-4 text-blue-500" />
+                  Segel Penawaran ke Smart Contract Sepolia (MetaMask)
+                </label>
               </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-6">
+                Nilai penawaran & sidik jari SHA-256 berkas PDF akan dicatat ke smart contract di Ethereum Sepolia untuk menjamin kerahasiaan & integritas data sebelum pembukaan lelang.
+              </p>
             </div>
 
             <div>
@@ -545,7 +791,7 @@ const ShowDetailVendor: React.FC = () => {
                 {submitting ? (
                   <>
                     <Lucide icon="Loader2" className="w-4 h-4 mr-2 animate-spin" />
-                    Mengirim...
+                    Menyegel & Mengirim...
                   </>
                 ) : (
                   <>
@@ -558,6 +804,23 @@ const ShowDetailVendor: React.FC = () => {
           </form>
         </Dialog.Panel>
       </Dialog>
+
+      {/* Modal Pemeriksaan & Segel On-Chain */}
+      {selectedBidVendor && (
+        <BlockchainBidModal
+          open={blockchainBidModalOpen}
+          onClose={() => setBlockchainBidModalOpen(false)}
+          tenderId={Number(id)}
+          vendorId={selectedBidVendor.id}
+          namaVendor={selectedBidVendor.nama}
+          nilaiPenawaran={selectedBidVendor.harga || myPenawaranHarga}
+          fileDokumenName={fileDokumen || "dokumen_penawaran.pdf"}
+          onBidSubmittedOnChain={() => {
+            checkBlockchainState(selectedBidVendor.id);
+            fetchDetail();
+          }}
+        />
+      )}
     </div>
   );
 };

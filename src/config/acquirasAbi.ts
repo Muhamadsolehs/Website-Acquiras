@@ -122,5 +122,84 @@ export const ACQUIRAS_CONTRACT_ABI = [
     outputs: [{ internalType: "bool", name: "", type: "bool" }],
     stateMutability: "view",
     type: "function"
+  },
+  // 9. getBid
+  {
+    inputs: [
+      { internalType: "uint256", name: "_tenderId", type: "uint256" },
+      { internalType: "uint256", name: "_vendorId", type: "uint256" }
+    ],
+    name: "getBid",
+    outputs: [
+      {
+        components: [
+          { internalType: "uint256", name: "tenderId", type: "uint256" },
+          { internalType: "uint256", name: "vendorId", type: "uint256" },
+          { internalType: "address", name: "vendorWallet", type: "address" },
+          { internalType: "uint256", name: "penawaranHarga", type: "uint256" },
+          { internalType: "string", name: "ipfsDokumenPenawaran", type: "string" },
+          { internalType: "bytes32", name: "penawaranHash", type: "bytes32" },
+          { internalType: "uint256", name: "submittedAt", type: "uint256" },
+          { internalType: "uint8", name: "status", type: "uint8" }
+        ],
+        internalType: "struct AcquirasProcurement.Bid",
+        name: "",
+        type: "tuple"
+      }
+    ],
+    stateMutability: "view",
+    type: "function"
+  },
+  // 10. getTenderParticipants
+  {
+    inputs: [{ internalType: "uint256", name: "_tenderId", type: "uint256" }],
+    name: "getTenderParticipants",
+    outputs: [{ internalType: "uint256[]", name: "", type: "uint256[]" }],
+    stateMutability: "view",
+    type: "function"
+  },
+  // 11. totalSignaturesCount
+  {
+    inputs: [],
+    name: "totalSignaturesCount",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function"
+  },
+  // 12. signatureRecords
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "signatureRecords",
+    outputs: [
+      { internalType: "uint256", name: "refId", type: "uint256" },
+      { internalType: "string", name: "docType", type: "string" },
+      { internalType: "bytes32", name: "documentHash", type: "bytes32" },
+      { internalType: "string", name: "signerName", type: "string" },
+      { internalType: "address", name: "signerWallet", type: "address" },
+      { internalType: "string", name: "bsreCertId", type: "string" },
+      { internalType: "uint256", name: "signedAt", type: "uint256" }
+    ],
+    stateMutability: "view",
+    type: "function"
+  },
+  // 13. milestonePayments
+  {
+    inputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "uint8", name: "", type: "uint8" }
+    ],
+    name: "milestonePayments",
+    outputs: [
+      { internalType: "uint256", name: "kontrakId", type: "uint256" },
+      { internalType: "uint8", name: "terminKe", "type": "uint8" },
+      { internalType: "string", name: "noPenagihan", "type": "string" },
+      { internalType: "uint256", name: "jumlahTagihan", "type": "uint256" },
+      { internalType: "string", name: "ipfsBapCid", "type": "string" },
+      { internalType: "string", name: "noSpb", "type": "string" },
+      { internalType: "uint8", name: "status", "type": "uint8" },
+      { internalType: "uint256", name: "paidAt", "type": "uint256" }
+    ],
+    stateMutability: "view",
+    type: "function"
   }
 ];
