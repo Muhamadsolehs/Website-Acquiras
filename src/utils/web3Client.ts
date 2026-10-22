@@ -42,6 +42,14 @@ export interface RecordSignaturePayload {
   bsreCertId: string;
 }
 
+export interface RecordMilestoneInvoicePayload {
+  kontrakId: number;
+  terminKe: number;
+  noPenagihan: string;
+  jumlahTagihan: number;
+  ipfsBapCid?: string;
+}
+
 export interface ApproveMilestonePayload {
   kontrakId: number;
   terminKe: number;
@@ -301,7 +309,35 @@ export class Web3Service {
   }
 
   /**
-   * 5. FITUR PERSETUJUAN PEMBAYARAN TERMIN (approveMilestonePayment)
+   * 5. FITUR PENCATATAN TAGIHAN TERMIN (recordMilestoneInvoice)
+   */
+  static async recordMilestoneInvoiceOnChain(payload: RecordMilestoneInvoicePayload): Promise<TxResult> {
+    await this.ensureTargetNetwork();
+
+    const { contract } = await this.getContractWithSigner();
+
+    const tx = await contract.recordMilestoneInvoice(
+      BigInt(payload.kontrakId),
+      payload.terminKe,
+      payload.noPenagihan,
+      BigInt(Math.round(payload.jumlahTagihan)),
+      payload.ipfsBapCid || "QmBAPTermin_" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+      { gasLimit: 2500000n }
+    );
+
+    const receipt = await tx.wait();
+
+    return {
+      success: true,
+      txHash: tx.hash,
+      blockNumber: receipt?.blockNumber,
+      explorerUrl: `${BLOCKCHAIN_CONFIG.explorerUrl}/tx/${tx.hash}`,
+      message: "Surat tagihan / BAP termin resmi tercatat di smart contract!",
+    };
+  }
+
+  /**
+   * 6. FITUR PERSETUJUAN PEMBAYARAN TERMIN (approveMilestonePayment)
    */
   static async approveMilestonePaymentOnChain(payload: ApproveMilestonePayload): Promise<TxResult> {
     await this.ensureTargetNetwork();
@@ -364,6 +400,20 @@ export class Web3Service {
       const publicProvider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
       const publicContract = new ethers.Contract(BLOCKCHAIN_CONFIG.contractAddress, ACQUIRAS_CONTRACT_ABI, publicProvider);
       return await publicContract.getBid(BigInt(tenderId), BigInt(vendorId));
+    }
+  }
+
+  /**
+   * BACA DATA TERMIN / ESCROW LANGSUNG DARI SMART CONTRACT (getMilestone)
+   */
+  static async getMilestoneOnChain(kontrakId: number, terminKe: number) {
+    try {
+      const contract = this.getReadOnlyContract();
+      return await contract.getMilestone(BigInt(kontrakId), terminKe);
+    } catch {
+      const publicProvider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+      const publicContract = new ethers.Contract(BLOCKCHAIN_CONFIG.contractAddress, ACQUIRAS_CONTRACT_ABI, publicProvider);
+      return await publicContract.getMilestone(BigInt(kontrakId), terminKe);
     }
   }
 

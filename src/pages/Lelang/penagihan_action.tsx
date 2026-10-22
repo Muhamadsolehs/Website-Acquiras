@@ -8,6 +8,7 @@ import { Dialog } from "@/components/Base/Headless";
 import api from "@/api/axiosinstance";
 import { toast } from "sonner";
 import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
+import { BlockchainMilestoneModal } from "@/components/Blockchain/BlockchainMilestoneModal";
 
 const PenagihanAction: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,16 @@ const PenagihanAction: React.FC = () => {
   // New Invoice Modal
   const [createInvoiceModal, setCreateInvoiceModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Blockchain Milestone Modal
+  const [milestoneModalOpen, setMilestoneModalOpen] = useState(false);
+  const [selectedMilestone, setSelectedMilestone] = useState<{
+    invoiceId: number;
+    terminKe: number;
+    noPenagihan: string;
+    jumlahTagihan: number;
+  } | null>(null);
+
   const [invoiceForm, setInvoiceForm] = useState({
     no_penagihan: "",
     termin_ke: 1,
@@ -105,20 +116,28 @@ const PenagihanAction: React.FC = () => {
     }
   };
 
-  const handleApprovePayment = async (invoiceId: number) => {
-    if (!window.confirm("Terbitkan Surat Perintah Bayar (SPM) dan tandai tagihan ini sebagai Dibayar?")) {
-      return;
-    }
+  const handleOpenApproveModal = (item: any) => {
+    setSelectedMilestone({
+      invoiceId: item.id,
+      terminKe: Number(item.termin_ke || 1),
+      noPenagihan: item.no_penagihan || `INV-TERM-${item.termin_ke || 1}`,
+      jumlahTagihan: Number(item.jumlah_tagihan || 0),
+    });
+    setMilestoneModalOpen(true);
+  };
 
+  const handleMilestoneApprovedOnChain = async (result: any) => {
+    if (!selectedMilestone) return;
     try {
-      await api.put(`/penagihan/${invoiceId}`, {
+      await api.put(`/penagihan/${selectedMilestone.invoiceId}`, {
         status: "dibayar",
+        no_spb: result.noSpb,
+        tanggal_dibayar: new Date().toISOString().split("T")[0],
       });
-
-      toast.success("Surat Perintah Bayar berhasil diterbitkan! Status tagihan: DIBAYAR.");
+      toast.success("Surat Perintah Bayar berhasil diterbitkan dan disinkronkan ke database!");
       fetchData();
     } catch (err: any) {
-      toast.error("Gagal memproses pembayaran: " + (err.response?.data?.message || err.message));
+      console.error("Gagal sinkron status pembayaran:", err);
     }
   };
 
@@ -286,11 +305,27 @@ const PenagihanAction: React.FC = () => {
                         <div className="text-[10px] text-slate-400 mt-1">Tgl bayar: {item.tanggal_dibayar}</div>
                       )}
                       {item.status === 'dibayar' && (
-                        <div className="mt-1.5">
+                        <div className="mt-1.5 flex flex-col gap-1">
                           <BlockchainAuditBadge
                             compact
                             recordType={`Milestone Termin ke-${item.termin_ke || 1} Settled`}
                           />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedMilestone({
+                                invoiceId: item.id,
+                                terminKe: Number(item.termin_ke || 1),
+                                noPenagihan: item.no_penagihan,
+                                jumlahTagihan: Number(item.jumlah_tagihan || 0),
+                              });
+                              setMilestoneModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-700/80 hover:bg-emerald-600 text-white border border-emerald-400/50 shadow transition-all cursor-pointer w-fit"
+                          >
+                            <Lucide icon="ShieldCheck" className="w-3 h-3 text-emerald-200" />
+                            <span>Cek Escrow On-Chain</span>
+                          </button>
                         </div>
                       )}
                     </Table.Td>
@@ -300,7 +335,7 @@ const PenagihanAction: React.FC = () => {
                           variant="primary"
                           size="sm"
                           className="text-xs px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                          onClick={() => handleApprovePayment(item.id)}
+                          onClick={() => handleOpenApproveModal(item)}
                         >
                           <Lucide icon="CheckCircle" className="w-3.5 h-3.5 mr-1" />
                           Terbitkan SP Bayar
@@ -432,6 +467,20 @@ const PenagihanAction: React.FC = () => {
           </form>
         </Dialog.Panel>
       </Dialog>
+
+      {/* Modal Release Escrow & Otorisasi SPB On-Chain */}
+      {selectedMilestone && (
+        <BlockchainMilestoneModal
+          open={milestoneModalOpen}
+          onClose={() => setMilestoneModalOpen(false)}
+          kontrakId={Number(id)}
+          terminKe={selectedMilestone.terminKe}
+          noPenagihan={selectedMilestone.noPenagihan}
+          jumlahTagihan={selectedMilestone.jumlahTagihan}
+          invoiceId={selectedMilestone.invoiceId}
+          onPaymentApprovedOnChain={handleMilestoneApprovedOnChain}
+        />
+      )}
     </div>
   );
 };

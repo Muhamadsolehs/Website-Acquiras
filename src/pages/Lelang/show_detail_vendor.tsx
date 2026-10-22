@@ -9,6 +9,8 @@ import api from "@/api/axiosinstance";
 import { toast } from "sonner";
 import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
 import { BlockchainBidModal } from "@/components/Blockchain/BlockchainBidModal";
+import { BlockchainAwardModal } from "@/components/Blockchain/BlockchainAwardModal";
+import { BlockchainVerifyDocModal } from "@/components/Blockchain/BlockchainVerifyDocModal";
 import { Web3Service } from "@/utils/web3Client";
 import { BLOCKCHAIN_CONFIG, formatAddress, getExplorerAddressUrl, getExplorerTxUrl, computeSha256 } from "@/config/blockchain";
 
@@ -27,6 +29,11 @@ const ShowDetailVendor: React.FC = () => {
   const [checkingChain, setCheckingChain] = useState<boolean>(false);
   const [blockchainBidModalOpen, setBlockchainBidModalOpen] = useState<boolean>(false);
   const [selectedBidVendor, setSelectedBidVendor] = useState<{ id: number; nama: string; harga: number } | null>(null);
+
+  // Modal Penetapan Pemenang (awardWinner) & Verifikasi Dokumen TTE
+  const [awardModalOpen, setAwardModalOpen] = useState<boolean>(false);
+  const [selectedAwardCandidate, setSelectedAwardCandidate] = useState<{ id: number; nama: string; harga: number; pesertaId?: number } | null>(null);
+  const [verifyDocModalOpen, setVerifyDocModalOpen] = useState<boolean>(false);
 
   // Modal Daftar/Ikuti Lelang
   const [bidModalOpen, setBidModalOpen] = useState(false);
@@ -229,6 +236,28 @@ const ShowDetailVendor: React.FC = () => {
   const isAlreadyRegistered = Boolean(myPeserta);
   const myPenawaranHarga = myPeserta ? Number(myPeserta.nilai_penawaran || 0) : 0;
 
+  const userRole = (currentUser?.role || "").toLowerCase();
+  const isAdmin = userRole.includes("admin") || userRole.includes("panitia") || userRole.includes("ppk") || !currentUser?.vendor;
+
+  const handleWinnerAwarded = async (result: any) => {
+    try {
+      if (selectedAwardCandidate?.pesertaId) {
+        await api.put(`/lelang-peserta/${selectedAwardCandidate.pesertaId}`, {
+          status_peserta: "Pemenang",
+        });
+      }
+      await api.put(`/lelang/${id}`, {
+        status: "Selesai",
+      });
+      toast.success("Penetapan pemenang berhasil! Status lelang diperbarui menjadi Selesai.");
+    } catch (err: any) {
+      console.error("Gagal sinkron status pemenang ke sistem database:", err);
+    } finally {
+      fetchDetail();
+      checkBlockchainState();
+    }
+  };
+
   return (
     <div className="px-6 py-8">
       {/* Header Info */}
@@ -264,6 +293,16 @@ const ShowDetailVendor: React.FC = () => {
                 HPS: Rp {Number(paket.nilai_hps || paket.hps || paket.nilai_pagu || 0).toLocaleString("id-ID")}
               </div>
             </div>
+
+            {/* Tombol TTE Verifier Dokumen */}
+            <Button
+              variant="outline-secondary"
+              className="bg-indigo-600/20 text-indigo-200 border-indigo-400/40 hover:bg-indigo-600/30"
+              onClick={() => setVerifyDocModalOpen(true)}
+            >
+              <Lucide icon="FileCheck" className="w-4 h-4 mr-2 text-indigo-300" />
+              Uji Dokumen (TTE Verifier)
+            </Button>
 
             {onChainBid && Number(onChainBid.submittedAt) > 0 ? (
               <Button
@@ -616,7 +655,7 @@ const ShowDetailVendor: React.FC = () => {
                           }`}>
                             {p.status_peserta || "Terdaftar"}
                           </span>
-                          <div className="mt-1.5 flex items-center gap-1.5">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => {
@@ -633,6 +672,26 @@ const ShowDetailVendor: React.FC = () => {
                               <Lucide icon="ShieldCheck" className="w-3 h-3 text-blue-200" />
                               <span>Cek Segel On-Chain</span>
                             </button>
+
+                            {isAdmin && p.status_peserta !== 'Pemenang' && lelang.status !== 'Selesai' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAwardCandidate({
+                                    id: p.vendor_id,
+                                    pesertaId: p.id,
+                                    nama: p.vendor?.nama_perusahaan || `Vendor #${p.vendor_id}`,
+                                    harga: Number(p.nilai_penawaran || 0),
+                                  });
+                                  setAwardModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50 shadow transition-all cursor-pointer"
+                                title="Tetapkan Vendor ini sebagai Pemenang Tender On-Chain & Web2"
+                              >
+                                <Lucide icon="Trophy" className="w-3 h-3 text-amber-300" />
+                                <span>Tetapkan Pemenang</span>
+                              </button>
+                            )}
                           </div>
                         </Table.Td>
                       </Table.Tr>
@@ -821,6 +880,28 @@ const ShowDetailVendor: React.FC = () => {
           }}
         />
       )}
+
+      {/* Modal Penetapan Pemenang Lelang On-Chain */}
+      {selectedAwardCandidate && (
+        <BlockchainAwardModal
+          open={awardModalOpen}
+          onClose={() => setAwardModalOpen(false)}
+          tenderId={Number(id)}
+          winnerVendorId={selectedAwardCandidate.id}
+          namaVendor={selectedAwardCandidate.nama}
+          finalPrice={selectedAwardCandidate.harga}
+          onWinnerAwardedOnChain={handleWinnerAwarded}
+        />
+      )}
+
+      {/* Modal Verifikasi Dokumen TTE Keaslian On-Chain */}
+      <BlockchainVerifyDocModal
+        open={verifyDocModalOpen}
+        onClose={() => setVerifyDocModalOpen(false)}
+        defaultRefId={Number(id)}
+        defaultDocType="DOKUMEN_LELANG"
+        defaultSignerName={currentUser?.name || "Panitia Pengadaan ACQUIRAS"}
+      />
     </div>
   );
 };

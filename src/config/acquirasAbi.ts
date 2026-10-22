@@ -61,7 +61,7 @@ export const ACQUIRAS_CONTRACT_ABI = [
     stateMutability: "nonpayable",
     type: "function"
   },
-  // 5. recordMilestone
+  // 5. recordMilestoneInvoice
   {
     inputs: [
       { internalType: "uint256", name: "_kontrakId", type: "uint256" },
@@ -70,7 +70,7 @@ export const ACQUIRAS_CONTRACT_ABI = [
       { internalType: "uint256", name: "_jumlahTagihan", type: "uint256" },
       { internalType: "string", name: "_ipfsBapCid", type: "string" }
     ],
-    name: "recordMilestone",
+    name: "recordMilestoneInvoice",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function"
@@ -85,6 +85,33 @@ export const ACQUIRAS_CONTRACT_ABI = [
     name: "approveMilestonePayment",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function"
+  },
+  // 6b. getMilestone
+  {
+    inputs: [
+      { internalType: "uint256", name: "_kontrakId", type: "uint256" },
+      { internalType: "uint8", name: "_terminKe", type: "uint8" }
+    ],
+    name: "getMilestone",
+    outputs: [
+      {
+        components: [
+          { internalType: "uint256", name: "kontrakId", type: "uint256" },
+          { internalType: "uint8", name: "terminKe", type: "uint8" },
+          { internalType: "string", name: "noPenagihan", type: "string" },
+          { internalType: "uint256", name: "jumlahTagihan", type: "uint256" },
+          { internalType: "string", name: "ipfsBapCid", type: "string" },
+          { internalType: "string", name: "noSpb", type: "string" },
+          { internalType: "uint8", name: "status", type: "uint8" },
+          { internalType: "uint256", name: "paidAt", type: "uint256" }
+        ],
+        internalType: "struct AcquirasProcurement.MilestonePayment",
+        name: "",
+        type: "tuple"
+      }
+    ],
+    stateMutability: "view",
     type: "function"
   },
   // 7. getTender
