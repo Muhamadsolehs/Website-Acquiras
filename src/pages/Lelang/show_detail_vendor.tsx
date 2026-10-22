@@ -267,135 +267,143 @@ const ShowDetailVendor: React.FC = () => {
     <div className="px-6 py-8">
       {/* Header Info */}
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                className="!text-white border-white/20"
-                onClick={() => navigate(-1)}
-              >
-                <Lucide icon="ArrowLeft" className="w-4 h-4 mr-1" />
-                Kembali
-              </Button>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <button
+              type="button"
+              className="h-10 px-3.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 font-bold text-xs shadow-md transition-all inline-flex items-center gap-1.5 shrink-0 cursor-pointer border-none"
+              onClick={() => navigate(-1)}
+            >
+              <Lucide icon="ArrowLeft" className="w-4 h-4 text-slate-700" />
+              <span>Kembali</span>
+            </button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
                 {lelang.judul_lelang || paket.nama_paket}
               </h1>
+              <p className="text-slate-200 text-xs mt-1">
+                Nomor Lelang: <span className="font-semibold text-white font-mono">{lelang.no_lelang}</span> | Kode Paket: <span className="font-semibold text-white font-mono">{paket.kode_paket}</span>
+              </p>
             </div>
-            <p className="text-slate-300 mt-1">
-              Nomor Lelang: <span className="font-semibold text-white">{lelang.no_lelang}</span> | Kode Paket: <span className="font-semibold text-white">{paket.kode_paket}</span>
-            </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
-            <div className="text-right">
-              <div className="text-xs text-slate-300">Nilai Pagu Paket</div>
-              <div className="text-2xl font-bold text-emerald-400">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:self-center">
+            <div className="text-left sm:text-right">
+              <div className="text-xs text-slate-200 uppercase font-medium tracking-wider">Nilai Pagu Paket</div>
+              <div className="text-2xl font-black text-emerald-300">
                 Rp {Number(paket.nilai_pagu || paket.nilai_hps || paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-slate-300">
                 HPS: Rp {Number(paket.nilai_hps || paket.hps || paket.nilai_pagu || 0).toLocaleString("id-ID")}
               </div>
             </div>
 
-            {/* Tombol TTE Verifier Dokumen */}
-            <Button
-              variant="outline-secondary"
-              className="bg-indigo-600/20 text-indigo-200 border-indigo-400/40 hover:bg-indigo-600/30"
-              onClick={() => setVerifyDocModalOpen(true)}
-            >
-              <Lucide icon="FileCheck" className="w-4 h-4 mr-2 text-indigo-300" />
-              Uji Dokumen (TTE Verifier)
-            </Button>
+            {/* Aksi Header - Berukuran Selaras h-10, Solid, Tidak Transparan */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Tombol TTE Verifier Dokumen (Solid Indigo) */}
+              <button
+                type="button"
+                onClick={() => setVerifyDocModalOpen(true)}
+                className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
+                title="Verifikasi Dokumen atau Tanda Tangan Elektronik On-Chain"
+              >
+                <Lucide icon="FileCheck" className="w-4 h-4 text-indigo-100" />
+                <span>Uji Dokumen (TTE Verifier)</span>
+              </button>
 
-            {/* Aksi Berdasarkan Peran Pengguna (Role-based Action) */}
-            {isAdmin ? (
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800/60 text-slate-200 border border-white/10">
-                  <Lucide icon="Shield" className="w-3.5 h-3.5 text-primary" />
-                  Mode Panitia / Evaluator
-                </span>
-                {lelang.status !== "Selesai" && (
-                  <Button
-                    variant="outline-secondary"
-                    className="bg-white/10 text-white border-white/20 hover:bg-white/20 text-xs"
-                    onClick={() => navigate(`/dashboard/master-lelang/edit/${id}`)}
-                  >
-                    <Lucide icon="PenLine" className="w-3.5 h-3.5 mr-1.5" />
-                    Ubah Lelang
-                  </Button>
-                )}
-              </div>
-            ) : isVendor ? (
-              onChainBid && Number(onChainBid.submittedAt) > 0 ? (
-                <Button
-                  variant="outline-secondary"
-                  className="bg-emerald-600/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-600/30"
-                  onClick={() => {
-                    setSelectedBidVendor({
-                      id: userVendorId,
-                      nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
-                      harga: Number(onChainBid.penawaranHarga),
-                    });
-                    setBlockchainBidModalOpen(true);
-                  }}
-                >
-                  <Lucide icon="ShieldCheck" className="w-4 h-4 mr-2 text-emerald-400" />
-                  Penawaran Tersegel On-Chain
-                </Button>
-              ) : isAlreadyRegistered ? (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline-secondary"
-                    className="bg-blue-600/20 text-blue-300 border-blue-500/40"
-                    onClick={() => toast.info("Anda sudah terdaftar sebagai peserta pada lelang ini.")}
-                  >
-                    <Lucide icon="CheckCircle" className="w-4 h-4 mr-2" />
-                    Sudah Terdaftar
-                  </Button>
-                  <Button
-                    variant="primary"
-                    className="bg-amber-600 hover:bg-amber-500 text-white"
+              {/* Aksi Berdasarkan Peran Pengguna (Role-based Action) */}
+              {isAdmin ? (
+                <>
+                  <div className="h-10 px-4 rounded-lg bg-slate-900 text-slate-100 border border-slate-700 font-bold text-xs shadow-md inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                    <Lucide icon="Shield" className="w-4 h-4 text-primary" />
+                    <span>Mode Panitia / Evaluator</span>
+                  </div>
+
+                  {lelang.status !== "Selesai" && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/dashboard/master-lelang/edit/${id}`)}
+                      className="h-10 px-4 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
+                    >
+                      <Lucide icon="PenLine" className="w-4 h-4" />
+                      <span>Ubah Lelang</span>
+                    </button>
+                  )}
+                </>
+              ) : isVendor ? (
+                onChainBid && Number(onChainBid.submittedAt) > 0 ? (
+                  <button
+                    type="button"
                     onClick={() => {
                       setSelectedBidVendor({
                         id: userVendorId,
                         nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
-                        harga: myPenawaranHarga,
+                        harga: Number(onChainBid.penawaranHarga),
                       });
                       setBlockchainBidModalOpen(true);
                     }}
+                    className="h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
                   >
-                    <Lucide icon="Lock" className="w-4 h-4 mr-2" />
-                    Segel ke Blockchain
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="primary"
-                  className="bg-primary text-white"
-                  onClick={() => setBidModalOpen(true)}
-                >
-                  <Lucide icon="Send" className="w-4 h-4 mr-2" />
-                  Ikuti Lelang & Tawar
-                </Button>
-              )
-            ) : null}
+                    <Lucide icon="ShieldCheck" className="w-4 h-4 text-emerald-100" />
+                    <span>Penawaran Tersegel On-Chain</span>
+                  </button>
+                ) : isAlreadyRegistered ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toast.info("Anda sudah terdaftar sebagai peserta pada lelang ini.")}
+                      className="h-10 px-4 rounded-lg bg-blue-700 text-white font-bold text-xs shadow-md inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
+                    >
+                      <Lucide icon="CheckCircle" className="w-4 h-4 text-blue-100" />
+                      <span>Sudah Terdaftar</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBidVendor({
+                          id: userVendorId,
+                          nama: currentUser?.vendor?.nama_perusahaan || "Perusahaan Anda",
+                          harga: myPenawaranHarga,
+                        });
+                        setBlockchainBidModalOpen(true);
+                      }}
+                      className="h-10 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
+                    >
+                      <Lucide icon="Lock" className="w-4 h-4 text-amber-100" />
+                      <span>Segel ke Blockchain</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setBidModalOpen(true)}
+                    className="h-10 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
+                  >
+                    <Lucide icon="Send" className="w-4 h-4" />
+                    <span>Ikuti Lelang & Tawar</span>
+                  </button>
+                )
+              ) : null}
+            </div>
           </div>
         </div>
 
+        {/* Badges Info Tender - Solid, Tidak Transparan */}
         <div className="flex flex-wrap gap-2 mt-4">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-            <Lucide icon="AlertCircle" className="w-3.5 h-3.5 mr-1" />
+          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white shadow-md border border-slate-700">
+            <Lucide icon="AlertCircle" className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
             Status: {lelang.status}
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-700 text-white shadow-md">
+            <Lucide icon="FileText" className="w-3.5 h-3.5 mr-1.5 text-indigo-200" />
             {paket.jenis_paket === "tender" ? "Tender Terbuka" : "Pengadaan Langsung (Non-Tender)"}
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 text-white shadow-md">
+            <Lucide icon="CheckCircle" className="w-3.5 h-3.5 mr-1.5 text-emerald-200" />
             Metode: {paket.metode_pengadaan || "Pascakualifikasi Satu File"}
           </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-amber-300 shadow-md border border-slate-700">
+            <Lucide icon="Building2" className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
             Satker: {satker.nama_satker || "Satuan Kerja"}
           </span>
         </div>
@@ -680,7 +688,7 @@ const ShowDetailVendor: React.FC = () => {
                           }`}>
                             {p.status_peserta || "Terdaftar"}
                           </span>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
                             <button
                               type="button"
                               onClick={() => {
@@ -691,10 +699,10 @@ const ShowDetailVendor: React.FC = () => {
                                 });
                                 setBlockchainBidModalOpen(true);
                               }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-700/80 hover:bg-blue-600 text-white border border-blue-400/50 shadow transition-all cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all cursor-pointer whitespace-nowrap border-none"
                               title="Klik untuk melihat bukti segel penawaran di Smart Contract"
                             >
-                              <Lucide icon="ShieldCheck" className="w-3 h-3 text-blue-200" />
+                              <Lucide icon="ShieldCheck" className="w-3.5 h-3.5 text-blue-100" />
                               <span>Cek Segel On-Chain</span>
                             </button>
 
@@ -710,10 +718,10 @@ const ShowDetailVendor: React.FC = () => {
                                   });
                                   setAwardModalOpen(true);
                                 }}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50 shadow transition-all cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all cursor-pointer whitespace-nowrap border-none"
                                 title="Tetapkan Vendor ini sebagai Pemenang Tender On-Chain & Web2"
                               >
-                                <Lucide icon="Trophy" className="w-3 h-3 text-amber-300" />
+                                <Lucide icon="Trophy" className="w-3.5 h-3.5 text-amber-300" />
                                 <span>Tetapkan Pemenang</span>
                               </button>
                             )}
