@@ -87,40 +87,52 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
       const localHash = await computeSha256(canonicalData);
       setLocalDataHash(localHash);
 
-      // 2. Baca state langsung dari Smart Contract (Read-only call)
+      // 2. Baca state langsung dari Smart Contract (Read-only call dengan Fallback RPC)
+      let provider: ethers.Provider;
       if (typeof window !== "undefined" && window.ethereum) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(contractAddress, ACQUIRAS_CONTRACT_ABI, provider);
-
-        try {
-          const tenderFromChain = await contract.getTender(BigInt(tenderId));
-          
-          // Periksa apakah tender sudah pernah dipublish on-chain (id != 0)
-          if (tenderFromChain && Number(tenderFromChain.id) > 0) {
-            setOnChainTenderData(tenderFromChain);
-            const onChainHps = Number(tenderFromChain.nilaiHps);
-            
-            // Komparasi Data Nyata: Apakah Nilai HPS di MySQL cocok dengan di Smart Contract?
-            const matches = onChainHps === nilaiHps;
-            setOnChainMatch(matches);
-
-            if (matches) {
-              toast.success(`Data 100% Cocok dengan Smart Contract On-Chain (Tender ID: ${tenderId})!`);
-            } else {
-              toast.error(`Peringatan Tamper: Nilai HPS di Web (Rp ${nilaiHps.toLocaleString()}) TIDAK COCOK dengan Smart Contract (Rp ${onChainHps.toLocaleString()})!`);
-            }
-          } else {
-            // Kontrak belum menyimpan tender ini (belum dieksekusi publishTender)
-            setOnChainTenderData(null);
-            setOnChainMatch(null);
-            setChainReadError(`Tender ID #${tenderId} belum tercatat di smart contract. Klik 'Kirim Transaksi ke Blockchain' untuk mencatatnya secara permanen.`);
-          }
-        } catch (contractErr: any) {
-          console.warn("Gagal membaca getTender langsung:", contractErr);
-          setChainReadError("Smart contract belum merespon pemanggilan getTender. Pastikan alamat kontrak benar di jaringan testnet.");
-        }
+        provider = new ethers.BrowserProvider(window.ethereum);
       } else {
-        setChainReadError("MetaMask belum terdeteksi. Silakan pasang MetaMask untuk sinkronisasi on-chain.");
+        provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+      }
+
+      let contract = new ethers.Contract(contractAddress, ACQUIRAS_CONTRACT_ABI, provider);
+
+      try {
+        let tenderFromChain;
+        try {
+          tenderFromChain = await contract.getTender(BigInt(tenderId));
+        } catch {
+          // Jika provider browser gagal, coba gunakan public RPC node Sepolia
+          const publicProvider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+          const publicContract = new ethers.Contract(contractAddress, ACQUIRAS_CONTRACT_ABI, publicProvider);
+          tenderFromChain = await publicContract.getTender(BigInt(tenderId));
+        }
+        
+        // Periksa apakah tender sudah pernah dipublish on-chain (id != 0)
+        if (tenderFromChain && Number(tenderFromChain.id) > 0) {
+          setOnChainTenderData(tenderFromChain);
+          const onChainHps = Number(tenderFromChain.nilaiHps);
+          
+          // Komparasi Data Nyata: Apakah Nilai HPS di MySQL cocok dengan di Smart Contract?
+          const matches = onChainHps === nilaiHps;
+          setOnChainMatch(matches);
+
+          if (matches) {
+            toast.success(`Data 100% Cocok dengan Smart Contract On-Chain (Tender ID: ${tenderId})!`);
+          } else {
+            toast.error(`Peringatan Tamper: Nilai HPS di Web (Rp ${nilaiHps.toLocaleString()}) TIDAK COCOK dengan Smart Contract (Rp ${onChainHps.toLocaleString()})!`);
+          }
+        } else {
+          // Kontrak belum menyimpan tender ini (belum dieksekusi publishTender)
+          setOnChainTenderData(null);
+          setOnChainMatch(null);
+          setChainReadError(`Tender ID #${tenderId} belum tercatat di smart contract. Klik 'Kirim Transaksi ke Blockchain' untuk mencatatnya secara permanen.`);
+        }
+      } catch (contractErr: any) {
+        console.warn("Gagal membaca getTender:", contractErr);
+        setOnChainTenderData(null);
+        setOnChainMatch(null);
+        setChainReadError("Smart contract belum menyimpan data tender ini. Silakan klik 'Kirim Transaksi ke Blockchain'.");
       }
 
       setVerifiedAt(new Date().toLocaleString("id-ID"));

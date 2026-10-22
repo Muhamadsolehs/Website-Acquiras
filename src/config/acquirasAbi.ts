@@ -92,18 +92,25 @@ export const ACQUIRAS_CONTRACT_ABI = [
     inputs: [{ internalType: "uint256", name: "_tenderId", type: "uint256" }],
     name: "getTender",
     outputs: [
-      { internalType: "uint256", name: "id", type: "uint256" },
-      { internalType: "string", name: "kodePaket", type: "string" },
-      { internalType: "string", name: "namaPaket", type: "string" },
-      { internalType: "uint256", name: "nilaiHps", type: "uint256" },
-      { internalType: "string", name: "ipfsKakCid", type: "string" },
-      { internalType: "bytes32", name: "dataHash", type: "bytes32" },
-      { internalType: "uint256", name: "tanggalMulai", type: "uint256" },
-      { internalType: "uint256", name: "tanggalSelesai", type: "uint256" },
-      { internalType: "uint8", name: "status", type: "uint8" },
-      { internalType: "uint256", name: "winnerVendorId", type: "uint256" },
-      { internalType: "address", name: "registeredBy", type: "address" },
-      { internalType: "uint256", name: "createdAt", type: "uint256" }
+      {
+        components: [
+          { internalType: "uint256", name: "id", type: "uint256" },
+          { internalType: "string", name: "kodePaket", type: "string" },
+          { internalType: "string", name: "namaPaket", type: "string" },
+          { internalType: "uint256", name: "nilaiHps", type: "uint256" },
+          { internalType: "string", name: "ipfsKakCid", type: "string" },
+          { internalType: "bytes32", name: "dataHash", type: "bytes32" },
+          { internalType: "uint256", name: "tanggalMulai", type: "uint256" },
+          { internalType: "uint256", name: "tanggalSelesai", type: "uint256" },
+          { internalType: "uint8", name: "status", type: "uint8" },
+          { internalType: "uint256", name: "winnerVendorId", type: "uint256" },
+          { internalType: "address", name: "registeredBy", type: "address" },
+          { internalType: "uint256", name: "createdAt", type: "uint256" }
+        ],
+        internalType: "struct AcquirasProcurement.Tender",
+        name: "",
+        type: "tuple"
+      }
     ],
     stateMutability: "view",
     type: "function"
