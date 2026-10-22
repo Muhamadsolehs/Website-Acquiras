@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Dialog } from "@/components/Base/Headless";
 import Button from "@/components/Base/Button";
 import Lucide from "@/components/Base/Lucide";
-import { BLOCKCHAIN_CONFIG, formatAddress, getExplorerAddressUrl, computeSha256 } from "@/config/blockchain";
+import { BLOCKCHAIN_CONFIG, formatAddress, getExplorerAddressUrl, getExplorerTxUrl, computeSha256 } from "@/config/blockchain";
 import { Web3Service } from "@/utils/web3Client";
 import { toast } from "sonner";
 import clsx from "clsx";
+import { ethers } from "ethers";
+import { ACQUIRAS_CONTRACT_ABI } from "@/config/acquirasAbi";
 
 interface BlockchainActionModalProps {
   open: boolean;
@@ -30,136 +32,179 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
   const [verifying, setVerifying] = useState(false);
   const [verifiedAt, setVerifiedAt] = useState<string>("");
   
-  // State Kriptografi Nyata
-  const [baselineHash, setBaselineHash] = useState<string>("");
-  const [currentDataHash, setCurrentDataHash] = useState<string>("");
-  const [generatedTxHash, setGeneratedTxHash] = useState<string>("");
-  
-  // State Uji Manipulasi (Tamper Test Mode untuk STC-BC-03)
-  const [isTampered, setIsTampered] = useState(false);
-  const [tamperedParams, setTamperedParams] = useState<{ label: string; value: string | number }[]>([]);
+  // State Kriptografi & Data On-Chain Nyata
+  const [localDataHash, setLocalDataHash] = useState<string>("");
+  const [onChainTenderData, setOnChainTenderData] = useState<any>(null);
+  const [onChainMatch, setOnChainMatch] = useState<boolean | null>(null);
+  const [chainReadError, setChainReadError] = useState<string | null>(null);
 
-  // State Web3 On-Chain (MetaMask)
+  // State Eksekusi Transaksi Web3 (MetaMask)
   const [isWalletAvailable, setIsWalletAvailable] = useState(false);
+  const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
   const [sendingToChain, setSendingToChain] = useState(false);
-  const [onChainTxHash, setOnChainTxHash] = useState<string | null>(null);
+  const [realTxHash, setRealTxHash] = useState<string | null>(null);
+  const [realBlockNumber, setRealBlockNumber] = useState<number | null>(null);
 
-  // Periksa ketersediaan MetaMask
+  // Periksa ketersediaan MetaMask & Akun Terhubung
   useEffect(() => {
-    setIsWalletAvailable(Web3Service.isWalletAvailable());
+    const hasWallet = Web3Service.isWalletAvailable();
+    setIsWalletAvailable(hasWallet);
+
+    if (hasWallet) {
+      Web3Service.getActiveAccount().then((acc) => {
+        setConnectedAccount(acc);
+      });
+    }
   }, []);
 
   // Format canonical data untuk perhitungan SHA-256
   const canonicalData = useMemo(() => {
-    const activeParams = isTampered ? tamperedParams : params;
     const obj: Record<string, string | number> = {};
-    activeParams.forEach((p) => {
+    params.forEach((p) => {
       obj[p.label] = p.value;
     });
     return JSON.stringify(obj);
-  }, [params, isTampered, tamperedParams]);
+  }, [params]);
 
-  // Hitung Hash Kriptografis Nyata saat modal dibuka atau saat parameter berubah
-  useEffect(() => {
-    let isMounted = true;
+  // Ekstrak parameter penting
+  const tenderId = useMemo(() => {
+    const p = params.find((x) => x.label.toLowerCase().includes("id"));
+    return p ? Number(p.value) : 1;
+  }, [params]);
 
-    async function runCryptographicHash() {
-      if (!open) return;
-      setVerifying(true);
+  const nilaiHps = useMemo(() => {
+    const p = params.find((x) => x.label.toLowerCase().includes("hps") || x.label.toLowerCase().includes("nilai"));
+    return p ? Number(p.value) : 0;
+  }, [params]);
 
-      try {
-        // 1. Hitung SHA-256 dari data asli lelang
-        const originalCanonical = JSON.stringify(
-          params.reduce((acc, p) => ({ ...acc, [p.label]: p.value }), {} as Record<string, string | number>)
-        );
-        const originalHash = await computeSha256(originalCanonical);
-
-        // 2. Hitung SHA-256 dari data saat ini (bisa asli atau dimanipulasi)
-        const currentHash = await computeSha256(canonicalData);
-
-        // 3. Hitung Transaction Proof Hash berbasis Contract & Payload
-        const txProof = await computeSha256(`TX:${contractAddress}:${functionName}:${originalHash}`);
-
-        if (isMounted) {
-          setBaselineHash(originalHash);
-          setCurrentDataHash(currentHash);
-          setGeneratedTxHash(txProof);
-          setVerifiedAt(new Date().toLocaleString("id-ID"));
-          setVerifying(false);
-        }
-      } catch (err) {
-        console.error("Gagal menghitung hash kriptografi:", err);
-        if (isMounted) setVerifying(false);
-      }
-    }
-
-    runCryptographicHash();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [open, params, canonicalData, contractAddress, functionName]);
-
-  // Reset state saat modal ditutup
-  useEffect(() => {
-    if (!open) {
-      setIsTampered(false);
-      setTamperedParams([]);
-      setOnChainTxHash(null);
-    }
-  }, [open]);
-
-  // Status Verifikasi: Cocok atau Dimanipulasi?
-  const isMatch = baselineHash !== "" && currentDataHash !== "" && baselineHash === currentDataHash;
-
-  // Handler Uji Coba Tampering (Simulasi Manipulasi Nilai HPS untuk Uji Coba STC-BC-03)
-  const handleToggleTamper = async () => {
-    if (!isTampered) {
-      // Simulasikan attacker mengubah nilai HPS atau judul paket
-      const modified = params.map((p) => {
-        if (p.label.toLowerCase().includes("hps") || p.label.toLowerCase().includes("nilai")) {
-          const originalNum = Number(p.value) || 100000000;
-          return { ...p, value: originalNum + 50000000 }; // Diubah dinaikkan 50 juta
-        }
-        return p;
-      });
-      setTamperedParams(modified);
-      setIsTampered(true);
-      toast.error("Simulasi Serangan Aktif: Nilai HPS diubah secara tidak sah (+Rp 50.000.000)!");
-    } else {
-      // Kembalikan ke data asli
-      setIsTampered(false);
-      setTamperedParams([]);
-      toast.success("Data dipulihkan ke kondisi asli dari database!");
-    }
-  };
-
-  // Tombol aksi cek ulang
-  const handleReverify = async () => {
+  // Fungsi Verifikasi Real: Baca Smart Contract via RPC atau Web3
+  const verifyWithOnChainState = async () => {
     setVerifying(true);
-    const hash = await computeSha256(canonicalData);
-    setCurrentDataHash(hash);
-    setVerifiedAt(new Date().toLocaleString("id-ID"));
-    setVerifying(false);
+    setChainReadError(null);
 
-    if (hash === baselineHash) {
-      toast.success("Verifikasi SHA-256 Selesai: Data 100% cocok dengan Segel Kriptografi!");
-    } else {
-      toast.error("Verifikasi Gagal: Hash data tidak cocok dengan segel asli!");
+    try {
+      // 1. Hitung SHA-256 Data Lokal MySQL
+      const localHash = await computeSha256(canonicalData);
+      setLocalDataHash(localHash);
+
+      // 2. Baca state langsung dari Smart Contract (Read-only call)
+      if (typeof window !== "undefined" && window.ethereum) {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(contractAddress, ACQUIRAS_CONTRACT_ABI, provider);
+
+        try {
+          const tenderFromChain = await contract.getTender(BigInt(tenderId));
+          
+          // Periksa apakah tender sudah pernah dipublish on-chain (id != 0)
+          if (tenderFromChain && Number(tenderFromChain.id) > 0) {
+            setOnChainTenderData(tenderFromChain);
+            const onChainHps = Number(tenderFromChain.nilaiHps);
+            
+            // Komparasi Data Nyata: Apakah Nilai HPS di MySQL cocok dengan di Smart Contract?
+            const matches = onChainHps === nilaiHps;
+            setOnChainMatch(matches);
+
+            if (matches) {
+              toast.success(`Data 100% Cocok dengan Smart Contract On-Chain (Tender ID: ${tenderId})!`);
+            } else {
+              toast.error(`Peringatan Tamper: Nilai HPS di Web (Rp ${nilaiHps.toLocaleString()}) TIDAK COCOK dengan Smart Contract (Rp ${onChainHps.toLocaleString()})!`);
+            }
+          } else {
+            // Kontrak belum menyimpan tender ini (belum dieksekusi publishTender)
+            setOnChainTenderData(null);
+            setOnChainMatch(null);
+            setChainReadError(`Tender ID #${tenderId} belum tercatat di smart contract. Klik 'Kirim Transaksi ke Blockchain' untuk mencatatnya secara permanen.`);
+          }
+        } catch (contractErr: any) {
+          console.warn("Gagal membaca getTender langsung:", contractErr);
+          setChainReadError("Smart contract belum merespon pemanggilan getTender. Pastikan alamat kontrak benar di jaringan testnet.");
+        }
+      } else {
+        setChainReadError("MetaMask belum terdeteksi. Silakan pasang MetaMask untuk sinkronisasi on-chain.");
+      }
+
+      setVerifiedAt(new Date().toLocaleString("id-ID"));
+    } catch (err: any) {
+      console.error("Error verifikasi:", err);
+      setChainReadError(err.message || "Terjadi kendala saat membaca blockchain.");
+    } finally {
+      setVerifying(false);
     }
   };
 
-  const activeTxHash = onChainTxHash || generatedTxHash;
+  // Jalankan verifikasi saat modal dibuka
+  useEffect(() => {
+    if (open) {
+      verifyWithOnChainState();
+    } else {
+      setRealTxHash(null);
+      setRealBlockNumber(null);
+      setOnChainTenderData(null);
+      setOnChainMatch(null);
+    }
+  }, [open, tenderId, nilaiHps, contractAddress]);
+
+  // Eksekusi Transaksi NYATA ke Testnet via MetaMask
+  const handleSendTransactionToTestnet = async () => {
+    if (!isWalletAvailable) {
+      toast.error("MetaMask tidak terdeteksi. Silakan buka browser yang memiliki ekstensi MetaMask.");
+      return;
+    }
+
+    setSendingToChain(true);
+    try {
+      // 1. Minta koneksi wallet
+      const accounts = await Web3Service.requestAccounts();
+      if (!accounts || accounts.length === 0) {
+        throw new Error("Koneksi MetaMask dibatalkan pengguna.");
+      }
+      setConnectedAccount(accounts[0]);
+
+      toast.info("Jendela MetaMask terbuka. Silakan klik 'Confirm' untuk menandatangani transaksi...");
+
+      // 2. Ambil parameter lelang
+      const kodePaket = String(params.find((p) => p.label.toLowerCase().includes("kode"))?.value || "PKT-01");
+      const namaPaket = String(params.find((p) => p.label.toLowerCase().includes("nama"))?.value || "Paket Pengadaan");
+      const tglMulai = Number(params.find((p) => p.label.toLowerCase().includes("mulai"))?.value || Math.floor(Date.now() / 1000));
+      const tglSelesai = Number(params.find((p) => p.label.toLowerCase().includes("selesai"))?.value || Math.floor(Date.now() / 1000) + 86400 * 14);
+
+      // 3. Eksekusi fungsi publishTenderOnChain
+      const result = await Web3Service.publishTenderOnChain({
+        tenderId,
+        kodePaket,
+        namaPaket,
+        nilaiHps,
+        ipfsKakCid: "QmAcquirasKAKDocsSealedOnChain2026",
+        dataHash: localDataHash || (await computeSha256(canonicalData)),
+        tanggalMulai: tglMulai,
+        tanggalSelesai: tglSelesai,
+      });
+
+      if (result.success) {
+        setRealTxHash(result.txHash);
+        setRealBlockNumber(result.blockNumber || null);
+        toast.success(`Transaksi Berhasil Masuk Block #${result.blockNumber}! Data resmi terkunci di blockchain.`);
+        
+        // Refresh verifikasi on-chain
+        await verifyWithOnChainState();
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.reason || err.message || "Gagal memproses transaksi di MetaMask.");
+    } finally {
+      setSendingToChain(false);
+    }
+  };
 
   const handleCopyHash = () => {
-    navigator.clipboard.writeText(activeTxHash);
+    const hashToCopy = realTxHash || localDataHash;
+    navigator.clipboard.writeText(hashToCopy);
     setCopiedHash(true);
-    toast.success("Hash bukti audit berhasil disalin!");
+    toast.success("Hash berhasil disalin ke clipboard!");
     setTimeout(() => setCopiedHash(false), 2000);
   };
 
   const handleCopyRemixInput = () => {
-    // Susun parameter comma-separated untuk input Remix IDE
     const formatted = params.map((p) => {
       if (typeof p.value === "string") return `"${p.value}"`;
       return p.value;
@@ -167,62 +212,17 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
 
     navigator.clipboard.writeText(formatted);
     setCopiedRemix(true);
-    toast.success("Format parameter Remix IDE berhasil disalin!");
+    toast.success("Parameter input untuk Remix IDE berhasil disalin!");
     setTimeout(() => setCopiedRemix(false), 2000);
   };
 
   const handleOpenExplorer = () => {
-    window.open(getExplorerAddressUrl(contractAddress), "_blank");
-  };
-
-  // Eksekusi On-Chain Nyata via MetaMask (Jika Terpasang)
-  const handleSendToMetaMask = async () => {
-    if (!isWalletAvailable) {
-      toast.error("MetaMask tidak terdeteksi di browser ini. Gunakan mode verifikasi kriptografis lokal.");
-      return;
-    }
-
-    setSendingToChain(true);
-    try {
-      const accounts = await Web3Service.requestAccounts();
-      if (!accounts || accounts.length === 0) {
-        throw new Error("Akun MetaMask tidak terhubung.");
-      }
-
-      toast.info("Mengirim transaksi ke smart contract... Silakan konfirmasi di MetaMask.");
-
-      // Cari parameter lelang
-      const tenderId = Number(params.find((p) => p.label.includes("Tender ID"))?.value || 1);
-      const kodePaket = String(params.find((p) => p.label.includes("Kode"))?.value || "PKT-01");
-      const namaPaket = String(params.find((p) => p.label.includes("Nama"))?.value || "Paket Lelang");
-      const nilaiHps = Number(params.find((p) => p.label.includes("HPS"))?.value || 100000000);
-      const tglMulai = Number(params.find((p) => p.label.includes("Mulai"))?.value || Math.floor(Date.now() / 1000));
-      const tglSelesai = Number(params.find((p) => p.label.includes("Selesai"))?.value || Math.floor(Date.now() / 1000) + 86400 * 14);
-
-      const result = await Web3Service.publishTenderOnChain({
-        tenderId,
-        kodePaket,
-        namaPaket,
-        nilaiHps,
-        ipfsKakCid: "QmAcquirasKAKDocsSealedOnChain2026",
-        dataHash: baselineHash,
-        tanggalMulai: tglMulai,
-        tanggalSelesai: tglSelesai,
-      });
-
-      if (result.success) {
-        setOnChainTxHash(result.txHash);
-        toast.success(`Transaksi On-Chain Berhasil! Hash: ${result.txHash.slice(0, 14)}...`);
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Gagal mengeksekusi transaksi di MetaMask.");
-    } finally {
-      setSendingToChain(false);
+    if (realTxHash) {
+      window.open(getExplorerTxUrl(realTxHash), "_blank");
+    } else {
+      window.open(getExplorerAddressUrl(contractAddress), "_blank");
     }
   };
-
-  const displayedParams = isTampered ? tamperedParams : params;
 
   return (
     <Dialog open={open} onClose={onClose}>
@@ -232,21 +232,23 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
           <div className="flex items-center gap-3">
             <div className={clsx(
               "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-              isMatch
+              onChainMatch === true
                 ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
-                : "bg-rose-500/10 border border-rose-500/20 text-rose-500"
+                : onChainMatch === false
+                ? "bg-rose-500/10 border border-rose-500/20 text-rose-500"
+                : "bg-blue-500/10 border border-blue-500/20 text-blue-500"
             )}>
               <Lucide
-                icon={verifying ? "Loader2" : isMatch ? "ShieldCheck" : "ShieldAlert"}
+                icon={verifying ? "Loader2" : onChainMatch === true ? "ShieldCheck" : onChainMatch === false ? "ShieldAlert" : "Cpu"}
                 className={clsx("w-5 h-5 stroke-[2]", { "animate-spin": verifying })}
               />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-800 dark:text-white">
-                Sertifikat Integritas & Segel Kriptografis Smart Contract
+                Integrasi Smart Contract & Audit On-Chain
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pemeriksaan Fungsi: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{functionName}()</span>
+                Fungsi Kontrak: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{functionName}()</span> | Kontrak: <span className="font-mono">{formatAddress(contractAddress, 8, 6)}</span>
               </p>
             </div>
           </div>
@@ -255,205 +257,152 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
           </button>
         </div>
 
-        {/* Status Verifikasi Otomatis Nyata (Live Cryptographic Indicator) */}
+        {/* Live Status Indicator */}
         <div className={clsx(
           "mt-4 p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all",
           verifying
             ? "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-700/50"
-            : isMatch
+            : onChainMatch === true
             ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
-            : "bg-rose-500/10 border-rose-500/40 text-rose-800 dark:text-rose-300"
+            : onChainMatch === false
+            ? "bg-rose-500/10 border-rose-500/40 text-rose-800 dark:text-rose-300"
+            : "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800/40"
         )}>
           <div className="flex items-center gap-3">
             <div className={clsx(
               "w-3.5 h-3.5 rounded-full shrink-0",
               verifying
                 ? "bg-blue-500 animate-ping"
-                : isMatch
+                : onChainMatch === true
                 ? "bg-emerald-500 animate-pulse"
-                : "bg-rose-500 animate-bounce"
+                : onChainMatch === false
+                ? "bg-rose-500 animate-bounce"
+                : "bg-amber-500"
             )} />
             <div>
               <div className="text-xs font-bold uppercase tracking-wide">
                 {verifying
-                  ? "MEMERIKSA HASH INTEGRITAS..."
-                  : isMatch
-                  ? "STATUS: TERVERIFIKASI & TERSEGEL (DATA ASLI)"
-                  : "PERINGATAN: DATA TERINDIKASI DIMANIPULASI!"}
+                  ? "MEMBACA KONSENSUS BLOCKCHAIN..."
+                  : onChainMatch === true
+                  ? "STATUS: TERVERIFIKASI SINKRON DENGAN SMART CONTRACT ON-CHAIN"
+                  : onChainMatch === false
+                  ? "PERINGATAN: DATA TIDAK COCOK DENGAN SMART CONTRACT!"
+                  : "STATUS: BELUM DIPUBLIKASIKAN KE BLOCKCHAIN (MENUNGGU EKSEKUSI)"}
               </div>
               <div className="text-[11px] opacity-80 mt-0.5">
                 {verifying
-                  ? "Menghitung digest SHA-256 dari parameter lelang..."
-                  : isMatch
-                  ? `Hash SHA-256 saat ini 100% cocok dengan Segel Konsensus (Waktu Cek: ${verifiedAt})`
-                  : `Hash saat ini BERBEDA dengan segel awal! Konsensus menolak keabsahan data.`}
+                  ? "Menghubungi smart contract dan membaca fungsi getTender()..."
+                  : onChainMatch === true
+                  ? `Nilai HPS di database MySQL (Rp ${nilaiHps.toLocaleString()}) 100% IDENTIK dengan di Smart Contract (Tender #${tenderId}).`
+                  : onChainMatch === false
+                  ? `Terdeteksi perbedaan data! Nilai HPS di Web berbeda dengan nilai yang telah dikunci di Smart Contract!`
+                  : chainReadError || "Klik tombol 'Kirim Transaksi ke Blockchain' di bawah untuk mengeksekusi smart contract secara nyata."}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-center">
+          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
             <span className={clsx(
               "px-2.5 py-1 rounded-full text-[11px] font-bold border inline-flex items-center gap-1",
-              isMatch
+              onChainMatch === true
                 ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                : "bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40"
+                : onChainMatch === false
+                ? "bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-500/40"
+                : "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30"
             )}>
               <Lucide
-                icon={isMatch ? "CheckCircle" : "AlertTriangle"}
-                className={clsx("w-3.5 h-3.5", isMatch ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600")}
+                icon={onChainMatch === true ? "CheckCircle" : onChainMatch === false ? "AlertTriangle" : "Clock"}
+                className="w-3.5 h-3.5"
               />
-              {isMatch ? "100% Valid" : "Tampered / Invalid"}
+              {onChainMatch === true ? "On-Chain Verified" : onChainMatch === false ? "Tampered / Mismatch" : "Pending Transaction"}
             </span>
           </div>
         </div>
 
-        {/* Cryptographic Hash Comparison (Bukti Nyata Variabel yang Dibandingkan) */}
-        <div className="mt-4 p-4 bg-slate-900 rounded-xl text-xs font-mono text-slate-300 space-y-2.5 border border-slate-800">
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">Metode Verifikasi:</span>
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
-              <Lucide icon="Cpu" className="w-3.5 h-3.5 text-cyan-400" />
-              Web Crypto SHA-256 Engine (Nyata & Matematis)
+        {/* Real Data Comparison Table */}
+        <div className="mt-4 p-4 bg-slate-900 rounded-xl text-xs font-mono text-slate-300 space-y-2 border border-slate-800">
+          <div className="flex justify-between items-center text-[11px] border-b border-slate-800 pb-2">
+            <span className="text-slate-400">Jaringan Target:</span>
+            <span className="text-cyan-400 font-bold">{BLOCKCHAIN_CONFIG.networkName} (Chain ID: 80002)</span>
+          </div>
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="text-slate-400">Wallet Signer (MetaMask):</span>
+            <span className="text-amber-300">{connectedAccount ? formatAddress(connectedAccount, 10, 8) : "Belum Terhubung"}</span>
+          </div>
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="text-slate-400">Nilai HPS di Database MySQL:</span>
+            <span className="text-white font-bold">Rp {nilaiHps.toLocaleString("id-ID")}</span>
+          </div>
+          <div className="flex justify-between items-center text-[11px]">
+            <span className="text-slate-400">Nilai HPS di Smart Contract:</span>
+            <span className={clsx("font-bold", onChainTenderData ? "text-emerald-400" : "text-slate-500")}>
+              {onChainTenderData ? `Rp ${Number(onChainTenderData.nilaiHps).toLocaleString("id-ID")}` : "Belum Tersimpan On-Chain"}
             </span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">Target Smart Contract:</span>
-            <span className="text-emerald-400 font-semibold">{formatAddress(contractAddress, 10, 8)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">Jaringan:</span>
-            <span className="text-cyan-400">{BLOCKCHAIN_CONFIG.networkName}</span>
-          </div>
-
-          <div className="pt-2 border-t border-slate-800 space-y-2">
-            <div>
-              <div className="flex justify-between text-[11px] text-slate-400 mb-0.5">
-                <span>1. Hash Segel Konsensus (Baseline):</span>
-                <span className="text-emerald-400">Tersimpan di Sistem</span>
-              </div>
-              <div className="p-1.5 rounded bg-slate-950 text-emerald-400 break-all select-all text-[11px]">
-                {baselineHash || "Menghitung..."}
-              </div>
+          {realTxHash && (
+            <div className="flex justify-between items-center text-[11px] pt-1 border-t border-slate-800">
+              <span className="text-slate-400">Tx Hash Resmi:</span>
+              <a
+                href={getExplorerTxUrl(realTxHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-emerald-400 hover:underline flex items-center gap-1"
+              >
+                {formatAddress(realTxHash, 10, 8)}
+                <Lucide icon="ExternalLink" className="w-3 h-3" />
+              </a>
             </div>
+          )}
+        </div>
 
-            <div>
-              <div className="flex justify-between text-[11px] text-slate-400 mb-0.5">
-                <span>2. Hash Data Nyata Saat Ini (Current Digest):</span>
-                <span className={isMatch ? "text-emerald-400" : "text-rose-400 font-bold"}>
-                  {isMatch ? "Cocok (Matched)" : "Berbeda (Mismatch!)"}
+        {/* Parameter List yang Disimpan */}
+        <div className="mt-4 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <span>Parameter Tender ({params.length} Atribut):</span>
+            <span className="text-[11px] text-slate-400 font-mono">Tender ID: #{tenderId}</span>
+          </div>
+          <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+            {params.map((p, idx) => (
+              <div
+                key={idx}
+                className="flex justify-between items-center p-2 rounded-lg text-xs bg-slate-50 dark:bg-darkmode-700 text-slate-800 dark:text-slate-200"
+              >
+                <span className="text-slate-500 dark:text-slate-400 font-medium">{p.label}:</span>
+                <span className="font-mono font-semibold text-right truncate max-w-[280px]">
+                  {String(p.value)}
                 </span>
               </div>
-              <div className={clsx(
-                "p-1.5 rounded break-all select-all text-[11px]",
-                isMatch ? "bg-slate-950 text-emerald-400" : "bg-rose-950/60 text-rose-300 border border-rose-800"
-              )}>
-                {currentDataHash || "Menghitung..."}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-[11px] text-slate-400 mb-0.5">
-                <span>3. Bukti Transaksi Audit (Tx Hash):</span>
-                <span className={onChainTxHash ? "text-cyan-400 font-bold" : "text-amber-400"}>
-                  {onChainTxHash ? "On-Chain (MetaMask)" : "Cryptographic Proof"}
-                </span>
-              </div>
-              <div className="p-1.5 rounded bg-slate-950 text-amber-300 break-all select-all text-[11px]">
-                {activeTxHash}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Parameter List yang Telah Dikunci */}
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Parameter yang Di-Hash ({displayedParams.length} Atribut):
-            </span>
-            {isTampered && (
-              <span className="text-[11px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded">
-                Mode Uji Manipulasi Aktif
-              </span>
-            )}
-          </div>
-          <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
-            {displayedParams.map((p, idx) => {
-              const isAltered = isTampered && (p.label.toLowerCase().includes("hps") || p.label.toLowerCase().includes("nilai"));
-              return (
-                <div
-                  key={idx}
-                  className={clsx(
-                    "flex justify-between items-center p-2 rounded-lg text-xs transition-colors",
-                    isAltered
-                      ? "bg-rose-50 border border-rose-300 text-rose-900 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-200"
-                      : "bg-slate-50 dark:bg-darkmode-700 text-slate-800 dark:text-slate-200"
-                  )}
-                >
-                  <span className="text-slate-500 dark:text-slate-400 font-medium">
-                    {p.label}:
-                    {isAltered && <span className="ml-1 text-[10px] text-rose-600 font-bold">(DIMODIFIKASI)</span>}
-                  </span>
-                  <span className={clsx("font-mono font-semibold text-right truncate max-w-[280px]", isAltered && "text-rose-600 dark:text-rose-400")}>
-                    {String(p.value)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Fitur Uji Coba STC-BC-03 (Tamper Simulation Bar) */}
-        <div className="mt-3 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-            <Lucide icon="FlaskConical" className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>
-              <strong>Uji Kasus STC-BC-03 (Anti-Tamper):</strong> Uji apakah sistem mendeteksi manipulasi data.
-            </span>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant={isTampered ? "secondary" : "outline-secondary"}
-            onClick={handleToggleTamper}
-            className={clsx(
-              "text-[11px] py-1 px-2.5 shrink-0",
-              isTampered
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white border-none"
-                : "border-amber-400 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
-            )}
-          >
-            {isTampered ? "Pulihkan Data Asli" : "Simulasikan Manipulasi HPS"}
-          </Button>
-        </div>
-
-        {/* Footer Actions */}
+        {/* Footer Actions (100% Real Execution) */}
         <div className="mt-5 pt-4 border-t border-slate-200/80 dark:border-darkmode-400 flex flex-col sm:flex-row gap-2.5 justify-between items-center">
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Tombol Eksekusi Transaksi NYATA */}
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleSendTransactionToTestnet}
+              disabled={sendingToChain}
+              className="text-xs bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-1.5 shadow-md shadow-primary/20"
+            >
+              <Lucide icon={sendingToChain ? "Loader2" : "Send"} className={clsx("w-3.5 h-3.5", sendingToChain && "animate-spin")} />
+              {sendingToChain ? "Memproses Transaksi di MetaMask..." : "Kirim Transaksi ke Blockchain (MetaMask)"}
+            </Button>
+
+            {/* Tombol Re-Check Verifikasi */}
             <Button
               type="button"
               variant="outline-secondary"
-              onClick={handleReverify}
+              onClick={verifyWithOnChainState}
               disabled={verifying}
               className="text-xs flex items-center justify-center gap-1.5 border-slate-300 dark:border-darkmode-300 text-slate-700 dark:text-slate-200"
+              title="Cek ulang kecocokan data web dengan smart contract"
             >
               <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", { "animate-spin": verifying })} />
-              {verifying ? "Menghitung..." : "Hitung Ulang Hash"}
+              {verifying ? "Mengecek..." : "Cek On-Chain"}
             </Button>
-
-            {isWalletAvailable && (
-              <Button
-                type="button"
-                variant="outline-primary"
-                onClick={handleSendToMetaMask}
-                disabled={sendingToChain}
-                className="text-xs flex items-center gap-1.5 text-primary border-primary/40 hover:bg-primary/10"
-                title="Kirim dan catat transaksi ini secara nyata ke smart contract via MetaMask"
-              >
-                <Lucide icon={sendingToChain ? "Loader2" : "Send"} className={clsx("w-3.5 h-3.5", sendingToChain && "animate-spin")} />
-                {sendingToChain ? "Mengirim ke Chain..." : "Kirim On-Chain (MetaMask)"}
-              </Button>
-            )}
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -462,7 +411,7 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
               variant="outline-secondary"
               onClick={handleCopyRemixInput}
               className="text-xs flex items-center gap-1.5 border-slate-300 dark:border-darkmode-300"
-              title="Salin parameter lelang untuk di-paste langsung ke Remix IDE"
+              title="Salin parameter input untuk eksekusi langsung di Remix IDE"
             >
               <Lucide icon={copiedRemix ? "Check" : "Code"} className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
               {copiedRemix ? "Tersalin!" : "Input Remix"}
@@ -470,21 +419,10 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
 
             <Button
               type="button"
-              variant="outline-secondary"
-              onClick={handleCopyHash}
-              className="text-xs flex items-center gap-1.5 border-slate-300 dark:border-darkmode-300"
-              title="Salin Transaction Proof Hash"
-            >
-              <Lucide icon={copiedHash ? "Check" : "Copy"} className="w-3.5 h-3.5" />
-              {copiedHash ? "Tersalin!" : "Salin Hash"}
-            </Button>
-
-            <Button
-              type="button"
               variant="outline-primary"
               onClick={handleOpenExplorer}
               className="text-xs flex items-center gap-1.5"
-              title="Buka pembuktian transaksi publik di PolygonScan"
+              title="Buka PolygonScan Explorer"
             >
               <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
               Explorer
@@ -492,9 +430,9 @@ export const BlockchainActionModal: React.FC<BlockchainActionModalProps> = ({
 
             <Button
               type="button"
-              variant="primary"
+              variant="outline-secondary"
               onClick={onClose}
-              className="text-xs bg-slate-800 hover:bg-slate-900 border-none px-4"
+              className="text-xs border-slate-300 dark:border-darkmode-300 px-4"
             >
               Tutup
             </Button>
