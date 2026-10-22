@@ -1,6 +1,6 @@
 /**
  * ABI Smart Contract AcquirasProcurement
- * Alamat: 0xd9145CCE52D386f254917e481eB44e9943F39138
+ * Alamat: 0xBC62Eee229A4c1653dFb0Ed0A82d07825976dE76 (Sepolia Testnet)
  */
 export const ACQUIRAS_CONTRACT_ABI = [
   // 1. publishTender

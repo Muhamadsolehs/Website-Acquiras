@@ -12,9 +12,9 @@ class BlockchainService
     public function __construct()
     {
         $this->enabled = filter_var(env('BLOCKCHAIN_ENABLED', true), FILTER_VALIDATE_BOOLEAN);
-        $this->contractAddress = env('BLOCKCHAIN_CONTRACT_ADDRESS', '0xd9145CCE52D386f254917e481eB44e9943F39138');
-        $this->networkName = env('BLOCKCHAIN_NETWORK', 'Polygon Amoy / Remix VM');
-        $this->explorerUrl = env('BLOCKCHAIN_EXPLORER_URL', 'https://amoy.polygonscan.com');
+        $this->contractAddress = env('BLOCKCHAIN_CONTRACT_ADDRESS', '0xBC62Eee229A4c1653dFb0Ed0A82d07825976dE76');
+        $this->networkName = env('BLOCKCHAIN_NETWORK', 'Ethereum Sepolia Testnet');
+        $this->explorerUrl = env('BLOCKCHAIN_EXPLORER_URL', 'https://sepolia.etherscan.io');
     }
 
     /**

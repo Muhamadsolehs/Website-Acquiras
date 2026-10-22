@@ -5,10 +5,10 @@
 
 export const BLOCKCHAIN_CONFIG = {
   enabled: true,
-  contractAddress: import.meta.env.VITE_BLOCKCHAIN_CONTRACT_ADDRESS || "0xd9145CCE52D386f254917e481eB44e9943F39138",
-  networkName: import.meta.env.VITE_BLOCKCHAIN_NETWORK || "Polygon Amoy / Remix VM",
-  chainId: 80002,
-  explorerUrl: import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL || "https://amoy.polygonscan.com",
+  contractAddress: import.meta.env.VITE_BLOCKCHAIN_CONTRACT_ADDRESS || "0xBC62Eee229A4c1653dFb0Ed0A82d07825976dE76",
+  networkName: import.meta.env.VITE_BLOCKCHAIN_NETWORK || "Ethereum Sepolia Testnet",
+  chainId: 11155111,
+  explorerUrl: import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL || "https://sepolia.etherscan.io",
 };
 
 /**
