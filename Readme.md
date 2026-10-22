@@ -55,7 +55,7 @@ ACQUIRAS menyelesaikan masalah ini dengan pendekatan **Invisible Web3**:
 | **Nama Kontrak** | `AcquirasProcurement.sol` |
 | **Lokasi Berkas** | `contracts/AcquirasProcurement.sol` |
 | **Solidity Compiler** | `^0.8.20` |
-| **Default Active Address** | `0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47` |
+| **Default Active Address** | `0xd9145CCE52D386f254917e481eB44e9943F39138` |
 | **Deployment Target** | Remix VM (Cancun) / EVM Testnet (Sepolia, Amoy) |
 | **ABI Reference** | `src/config/acquirasAbi.ts` |
 
@@ -217,13 +217,13 @@ Pastikan alamat kontrak tersinkronisasi di kedua environment:
 ### Frontend (`.env`):
 ```env
 VITE_API_URL="http://localhost:8000/api"
-VITE_BLOCKCHAIN_CONTRACT_ADDRESS="0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47"
+VITE_BLOCKCHAIN_CONTRACT_ADDRESS="0xd9145CCE52D386f254917e481eB44e9943F39138"
 VITE_BLOCKCHAIN_NETWORK="Remix VM / EVM Testnet"
 ```
 
 ### Backend (`laravel-base/.env`):
 ```env
-BLOCKCHAIN_CONTRACT_ADDRESS="0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47"
+BLOCKCHAIN_CONTRACT_ADDRESS="0xd9145CCE52D386f254917e481eB44e9943F39138"
 BLOCKCHAIN_RPC_URL="http://127.0.0.1:8545"
 BLOCKCHAIN_CHAIN_ID="1337"
 ```

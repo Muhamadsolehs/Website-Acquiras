@@ -728,7 +728,6 @@ function Main() {
             { label: "Tanggal Mulai (Epoch)", value: Math.floor(new Date(activeBlockchainLelang.tanggal_mulai).getTime() / 1000) },
             { label: "Tanggal Selesai (Epoch)", value: Math.floor(new Date(activeBlockchainLelang.tanggal_selesai).getTime() / 1000) },
           ]}
-          remixFormattedInput={`${activeBlockchainLelang.id}, "${activeBlockchainLelang.paket?.kode_paket || 'PKT-01'}", "${activeBlockchainLelang.judul_lelang || activeBlockchainLelang.paket?.nama_paket || 'Lelang'}", ${Math.round(Number(activeBlockchainLelang.paket?.nilai_hps || activeBlockchainLelang.paket?.nilai_pagu || 500000000))}, "QmAcquirasKAKDocsSealedOnChain2026", "0x89f1d43a65239e01bc3d2e9b812f4510aa29b9f71c4912e845cba0281987ef12", ${Math.floor(new Date(activeBlockchainLelang.tanggal_mulai).getTime() / 1000)}, ${Math.floor(new Date(activeBlockchainLelang.tanggal_selesai).getTime() / 1000)}`}
         />
       )}
       {/* Modal Buat Paket Pengadaan Baru */}

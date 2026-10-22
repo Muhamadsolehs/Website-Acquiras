@@ -12,7 +12,7 @@ class BlockchainService
     public function __construct()
     {
         $this->enabled = filter_var(env('BLOCKCHAIN_ENABLED', true), FILTER_VALIDATE_BOOLEAN);
-        $this->contractAddress = env('BLOCKCHAIN_CONTRACT_ADDRESS', '0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47');
+        $this->contractAddress = env('BLOCKCHAIN_CONTRACT_ADDRESS', '0xd9145CCE52D386f254917e481eB44e9943F39138');
         $this->networkName = env('BLOCKCHAIN_NETWORK', 'Polygon Amoy / Remix VM');
         $this->explorerUrl = env('BLOCKCHAIN_EXPLORER_URL', 'https://amoy.polygonscan.com');
     }

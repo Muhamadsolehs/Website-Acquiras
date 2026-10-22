@@ -5,7 +5,7 @@
 
 export const BLOCKCHAIN_CONFIG = {
   enabled: true,
-  contractAddress: import.meta.env.VITE_BLOCKCHAIN_CONTRACT_ADDRESS || "0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47",
+  contractAddress: import.meta.env.VITE_BLOCKCHAIN_CONTRACT_ADDRESS || "0xd9145CCE52D386f254917e481eB44e9943F39138",
   networkName: import.meta.env.VITE_BLOCKCHAIN_NETWORK || "Polygon Amoy / Remix VM",
   chainId: 80002,
   explorerUrl: import.meta.env.VITE_BLOCKCHAIN_EXPLORER_URL || "https://amoy.polygonscan.com",
