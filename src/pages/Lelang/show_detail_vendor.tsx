@@ -7,6 +7,7 @@ import { FormInput, FormTextarea, FormCheck } from "@/components/Base/Form";
 import { Dialog } from "@/components/Base/Headless";
 import api from "@/api/axiosinstance";
 import { toast } from "sonner";
+// Trigger HMR update for smart contract modal theme
 import { BlockchainAuditBadge } from "@/components/Blockchain/BlockchainAuditBadge";
 import { BlockchainBidModal } from "@/components/Blockchain/BlockchainBidModal";
 import { BlockchainAwardModal } from "@/components/Blockchain/BlockchainAwardModal";
