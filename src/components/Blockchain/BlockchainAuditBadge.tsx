@@ -131,20 +131,20 @@ const AuditModal: React.FC<AuditModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onClose={onClose}>
-      <Dialog.Panel className="p-6 max-w-xl w-full bg-white dark:bg-darkmode-600 border border-slate-200/80 dark:border-darkmode-400 text-slate-800 dark:text-white rounded-2xl shadow-2xl my-8">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-darkmode-400">
+      <Dialog.Panel className="p-6 max-w-xl w-full bg-white dark:bg-white border border-slate-200/80 text-slate-800 rounded-2xl shadow-2xl my-8">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200/80">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center shadow-sm">
               <Lucide icon="Cpu" className="w-5 h-5 stroke-[2]" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-slate-800 dark:text-white">Bukti Audit Trail Smart Contract</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Verifikasi Kriptografi ACQUIRAS Web3 Hybrid</p>
+              <h3 className="font-bold text-base text-slate-800">Bukti Audit Trail Smart Contract</h3>
+              <p className="text-xs text-slate-500">Verifikasi Kriptografi ACQUIRAS Web3 Hybrid</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-darkmode-500 transition-colors"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <Lucide icon="X" className="w-5 h-5" />
           </button>
