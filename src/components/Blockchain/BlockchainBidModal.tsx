@@ -204,265 +204,276 @@ export const BlockchainBidModal: React.FC<BlockchainBidModalProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <Dialog.Panel className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-white my-8">
+      <Dialog.Panel className="w-full max-w-2xl bg-white dark:bg-darkmode-600 border border-slate-200/80 dark:border-darkmode-400 rounded-2xl shadow-2xl overflow-hidden text-slate-800 dark:text-white my-8">
         {/* Header */}
-          <div className="relative overflow-hidden bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 border-b border-slate-800">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-400/40 text-blue-400 shadow-inner">
-                  <Lucide icon="Lock" className="w-6 h-6" />
+        <div className="p-6 border-b border-slate-200/80 dark:border-darkmode-400 bg-slate-50/50 dark:bg-darkmode-700/50">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 shadow-sm">
+                <Lucide icon="Lock" className="w-5 h-5 stroke-[2]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-800 dark:text-white tracking-wide">
+                    Segel Penawaran Vendor (Smart Contract)
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    submitBid()
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-white tracking-wide">
-                      Segel Penawaran Vendor (Smart Contract)
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                      submitBid()
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Perekaman Harga Penawaran & Hash Dokumen Kriptografis ke Jaringan Sepolia
-                  </p>
-                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Perekaman Harga Penawaran & Hash Dokumen Kriptografis ke Jaringan Sepolia
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-darkmode-500 transition-colors"
+            >
+              <Lucide icon="X" className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+          {/* Status On-Chain Real-Time */}
+          <div className={clsx(
+            "rounded-xl border p-4 transition-all",
+            onChainBid && Number(onChainBid.submittedAt) > 0
+              ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+              : "bg-amber-50/80 border-amber-200 text-amber-900"
+          )}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                <Lucide icon="Activity" className="w-4 h-4 text-blue-600" />
+                Status Integritas di Smart Contract Sepolia
               </div>
               <button
-                onClick={onClose}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/80 transition-colors"
+                onClick={verifyBidWithOnChainState}
+                disabled={verifying}
+                className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold disabled:opacity-50"
+                title="Baca ulang state blockchain"
               >
-                <Lucide icon="X" className="w-5 h-5" />
+                <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", verifying && "animate-spin")} />
+                {verifying ? "Membaca Node..." : "Cek Ulang"}
               </button>
             </div>
-          </div>
 
-          <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-            {/* Status On-Chain Real-Time */}
-            <div className="rounded-xl border p-4 bg-slate-800/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <Lucide icon="Activity" className="w-4 h-4 text-blue-400" />
-                  Status Integritas di Smart Contract Sepolia
-                </div>
-                <button
-                  onClick={verifyBidWithOnChainState}
-                  disabled={verifying}
-                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium disabled:opacity-50"
-                  title="Baca ulang state blockchain"
-                >
-                  <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", verifying && "animate-spin")} />
-                  {verifying ? "Membaca Node..." : "Cek Ulang"}
-                </button>
+            {verifying ? (
+              <div className="flex items-center gap-2.5 text-xs text-slate-600 py-2">
+                <Lucide icon="Loader2" className="w-4 h-4 animate-spin text-blue-600" />
+                Membaca data live dari Smart Contract Sepolia (RPC Call)...
               </div>
-
-              {verifying ? (
-                <div className="flex items-center gap-2.5 text-xs text-slate-300 py-2">
-                  <Lucide icon="Loader2" className="w-4 h-4 animate-spin text-blue-400" />
-                  Membaca data live dari Smart Contract Sepolia (RPC Call)...
-                </div>
-              ) : onChainBid && Number(onChainBid.submittedAt) > 0 ? (
-                <div className="space-y-2 mt-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/50">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      TERSEGEL DI BLOCKCHAIN (VERIFIED)
+            ) : onChainBid && Number(onChainBid.submittedAt) > 0 ? (
+              <div className="space-y-2.5 mt-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    TERSEGEL DI BLOCKCHAIN (VERIFIED)
+                  </span>
+                  {onChainMatch ? (
+                    <span className="text-[11px] text-emerald-700 font-bold bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      ✓ Nilai Penawaran Sesuai
                     </span>
-                    {onChainMatch ? (
-                      <span className="text-[11px] text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800">
-                        ✓ Nilai Penawaran Sesuai
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-rose-400 font-semibold bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800">
-                        ⚠ Tamper Warning: Nilai Tidak Cocok!
-                      </span>
-                    )}
-                  </div>
+                  ) : (
+                    <span className="text-[11px] text-rose-700 font-bold bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-200">
+                      ⚠ Tamper Warning: Nilai Tidak Cocok!
+                    </span>
+                  )}
+                </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-2">
-                    <div className="p-2 rounded bg-slate-900/60 border border-slate-700/50">
-                      <span className="text-slate-400 text-[10px]">Harga On-Chain:</span>
-                      <div className="font-bold text-emerald-400">
-                        Rp {Number(onChainBid.penawaranHarga).toLocaleString("id-ID")}
-                      </div>
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                  <div className="p-2.5 rounded-lg bg-white border border-emerald-200/80 shadow-sm">
+                    <span className="text-slate-500 text-[10px] font-medium">Harga On-Chain:</span>
+                    <div className="font-bold text-emerald-600 text-sm">
+                      Rp {Number(onChainBid.penawaranHarga).toLocaleString("id-ID")}
                     </div>
-                    <div className="p-2 rounded bg-slate-900/60 border border-slate-700/50">
-                      <span className="text-slate-400 text-[10px]">Waktu Segel:</span>
-                      <div className="font-medium text-slate-200">
-                        {new Date(Number(onChainBid.submittedAt) * 1000).toLocaleString("id-ID")}
-                      </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-emerald-200/80 shadow-sm">
+                    <span className="text-slate-500 text-[10px] font-medium">Waktu Segel:</span>
+                    <div className="font-medium text-slate-800 text-xs mt-0.5">
+                      {new Date(Number(onChainBid.submittedAt) * 1000).toLocaleString("id-ID")}
                     </div>
-                    <div className="col-span-2 p-2 rounded bg-slate-900/60 border border-slate-700/50">
-                      <span className="text-slate-400 text-[10px]">Wallet Vendor:</span>
-                      <div className="font-mono text-slate-200 text-[11px] truncate">
-                        {onChainBid.vendorWallet}
-                      </div>
+                  </div>
+                  <div className="col-span-2 p-2.5 rounded-lg bg-white border border-emerald-200/80 shadow-sm">
+                    <span className="text-slate-500 text-[10px] font-medium">Wallet Vendor:</span>
+                    <div className="font-mono text-slate-800 text-[11px] truncate mt-0.5 font-semibold">
+                      {onChainBid.vendorWallet}
                     </div>
-                    <div className="col-span-2 p-2 rounded bg-slate-900/60 border border-slate-700/50">
-                      <span className="text-slate-400 text-[10px]">Hash Dokumen (SHA-256):</span>
-                      <div className="font-mono text-slate-300 text-[11px] truncate">
-                        {onChainBid.penawaranHash}
-                      </div>
+                  </div>
+                  <div className="col-span-2 p-2.5 rounded-lg bg-white border border-emerald-200/80 shadow-sm">
+                    <span className="text-slate-500 text-[10px] font-medium">Hash Dokumen (SHA-256):</span>
+                    <div className="font-mono text-slate-700 text-[11px] truncate mt-0.5">
+                      {onChainBid.penawaranHash}
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="mt-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs">
-                  <div className="flex items-center gap-2 font-semibold text-amber-300">
-                    <Lucide icon="AlertTriangle" className="w-4 h-4 text-amber-400 shrink-0" />
-                    Belum Tersegel On-Chain
-                  </div>
-                  <p className="mt-1 text-slate-300">
-                    Penawaran vendor ID #{vendorId} untuk tender #{tenderId} belum tercatat di smart contract.
-                    Klik tombol di bawah untuk menyegelnya secara permanen ke Sepolia Testnet.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Rincian Parameter */}
-            <div className="space-y-3">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Parameter Penawaran
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-700/60">
-                  <span className="text-slate-400">Tender ID:</span>
-                  <div className="font-bold text-white text-sm">#{tenderId}</div>
+            ) : (
+              <div className="mt-2 p-3 rounded-lg bg-white/80 border border-amber-200 text-amber-900 text-xs">
+                <div className="flex items-center gap-2 font-bold text-amber-800">
+                  <Lucide icon="AlertTriangle" className="w-4 h-4 text-amber-600 shrink-0" />
+                  Belum Tersegel On-Chain
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-700/60">
-                  <span className="text-slate-400">Vendor ID / Nama:</span>
-                  <div className="font-bold text-white text-sm truncate">#{vendorId} - {namaVendor}</div>
-                </div>
-                <div className="col-span-2 p-2.5 rounded-lg bg-slate-800/40 border border-slate-700/60">
-                  <span className="text-slate-400">Nilai Harga Penawaran:</span>
-                  <div className="font-bold text-emerald-400 text-base">
-                    Rp {Number(nilaiPenawaran).toLocaleString("id-ID")}
-                  </div>
-                </div>
-                <div className="col-span-2 p-2.5 rounded-lg bg-slate-800/40 border border-slate-700/60">
-                  <span className="text-slate-400">Berkas Dokumen Teknis & Harga:</span>
-                  <div className="font-semibold text-slate-200 truncate flex items-center gap-1.5 mt-0.5">
-                    <Lucide icon="FileText" className="w-4 h-4 text-rose-400" />
-                    {fileDokumenName}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SHA-256 Hash Dokumen */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-300">Penawaran Hash (SHA-256):</span>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(localBidHash, "hash")}
-                  className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-[11px]"
-                >
-                  <Lucide icon={copiedHash ? "Check" : "Copy"} className="w-3 h-3" />
-                  {copiedHash ? "Tersalin" : "Salin Hash"}
-                </button>
-              </div>
-              <div className="p-2.5 rounded-lg bg-black/60 border border-slate-700 font-mono text-[11px] text-blue-300 break-all select-all">
-                {localBidHash || "Menghitung hash..."}
-              </div>
-            </div>
-
-            {/* Real Tx Hash if just executed */}
-            {realTxHash && (
-              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-1.5">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
-                  <Lucide icon="CheckCircle" className="w-4 h-4 text-emerald-400" />
-                  Transaksi Berhasil Tercatat On-Chain!
-                </div>
-                <div className="text-[11px] text-slate-300">
-                  Hash Transaksi: <span className="font-mono text-emerald-200">{realTxHash}</span>
-                </div>
-                <a
-                  href={getExplorerTxUrl(realTxHash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 underline font-medium pt-1"
-                >
-                  <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
-                  Buka di Etherscan Sepolia Explorer
-                </a>
+                <p className="mt-1 text-slate-600">
+                  Penawaran vendor ID #{vendorId} untuk tender #{tenderId} belum tercatat di smart contract.
+                  Klik tombol di bawah untuk menyegelnya secara permanen ke Sepolia Testnet.
+                </p>
               </div>
             )}
+          </div>
 
-            {/* Eksekusi Web3 MetaMask Button */}
-            <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-white">
-                  <Lucide icon="Wallet" className="w-4 h-4 text-blue-400" />
-                  Koneksi Wallet Pengirim (Vendor Web3)
-                </div>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  {connectedAccount ? formatAddress(connectedAccount) : isWalletAvailable ? "Siap Terhubung" : "MetaMask Tidak Ada"}
-                </span>
-              </div>
-
-              <Button
-                variant="primary"
-                onClick={handleSendBidTransaction}
-                disabled={submittingToChain || verifying}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 shadow-lg flex items-center justify-center gap-2"
-              >
-                {submittingToChain ? (
-                  <>
-                    <Lucide icon="Loader2" className="w-4 h-4 animate-spin" />
-                    Menyegel Penawaran via MetaMask...
-                  </>
-                ) : onChainBid && Number(onChainBid.submittedAt) > 0 ? (
-                  <>
-                    <Lucide icon="RefreshCw" className="w-4 h-4" />
-                    Perbarui / Kirim Ulang Segel On-Chain
-                  </>
-                ) : (
-                  <>
-                    <Lucide icon="ShieldCheck" className="w-4 h-4" />
-                    Kirim Transaksi Segel Penawaran ke Sepolia
-                  </>
-                )}
-              </Button>
+          {/* Rincian Parameter */}
+          <div className="space-y-3">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Parameter Penawaran
             </div>
-
-            {/* Salin Parameter untuk Remix IDE (Keperluan Ujian/Sidang Skripsi) */}
-            <div className="pt-2 border-t border-slate-800">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-                <span className="flex items-center gap-1.5">
-                  <Lucide icon="Code" className="w-3.5 h-3.5 text-purple-400" />
-                  Parameter Remix IDE (Uji Coba Manual Dosen):
-                </span>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(remixFormattedInput, "remix")}
-                  className="text-purple-400 hover:text-purple-300 flex items-center gap-1 text-[11px]"
-                >
-                  <Lucide icon={copiedRemix ? "Check" : "Copy"} className="w-3 h-3" />
-                  {copiedRemix ? "Tersalin" : "Salin Parameter Remix"}
-                </button>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-500 font-medium">Tender ID:</span>
+                <div className="font-bold text-slate-800 text-sm mt-0.5">#{tenderId}</div>
               </div>
-              <div className="p-2 rounded bg-black/40 border border-slate-800 font-mono text-[10px] text-slate-300 break-all select-all">
-                {remixFormattedInput}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-500 font-medium">Vendor ID / Nama:</span>
+                <div className="font-bold text-slate-800 text-sm truncate mt-0.5">#{vendorId} - {namaVendor}</div>
+              </div>
+              <div className="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-500 font-medium">Nilai Harga Penawaran:</span>
+                <div className="font-bold text-emerald-600 text-lg mt-0.5">
+                  Rp {Number(nilaiPenawaran).toLocaleString("id-ID")}
+                </div>
+              </div>
+              <div className="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-500 font-medium">Berkas Dokumen Teknis & Harga:</span>
+                <div className="font-semibold text-slate-800 truncate flex items-center gap-2 mt-1">
+                  <Lucide icon="FileText" className="w-4 h-4 text-rose-500" />
+                  <span>{fileDokumenName}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between p-4 bg-slate-950 border-t border-slate-800 text-xs">
-            <a
-              href={getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 flex items-center gap-1 underline"
+          {/* SHA-256 Hash Dokumen */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-700">Penawaran Hash (SHA-256):</span>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(localBidHash, "hash")}
+                className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-[11px] font-semibold"
+              >
+                <Lucide icon={copiedHash ? "Check" : "Copy"} className="w-3.5 h-3.5" />
+                {copiedHash ? "Tersalin" : "Salin Hash"}
+              </button>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 font-mono text-[11px] text-cyan-300 break-all select-all">
+              {localBidHash || "Menghitung hash..."}
+            </div>
+          </div>
+
+          {/* Real Tx Hash if just executed */}
+          {realTxHash && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
+                <Lucide icon="CheckCircle" className="w-4 h-4 text-emerald-600" />
+                Transaksi Berhasil Tercatat On-Chain!
+              </div>
+              <div className="text-[11px] text-slate-600">
+                Hash Transaksi: <span className="font-mono text-emerald-800 font-bold">{realTxHash}</span>
+              </div>
+              <a
+                href={getExplorerTxUrl(realTxHash)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 underline font-semibold pt-1"
+              >
+                <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
+                Buka di Etherscan Sepolia Explorer
+              </a>
+            </div>
+          )}
+
+          {/* Eksekusi Web3 MetaMask Button */}
+          <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/70 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                <Lucide icon="Wallet" className="w-4 h-4 text-blue-600" />
+                Koneksi Wallet Pengirim (Vendor Web3)
+              </div>
+              <span className="text-[11px] text-slate-600 font-mono font-semibold">
+                {connectedAccount ? formatAddress(connectedAccount) : isWalletAvailable ? "Siap Terhubung" : "MetaMask Tidak Ada"}
+              </span>
+            </div>
+
+            <Button
+              variant="primary"
+              onClick={handleSendBidTransaction}
+              disabled={submittingToChain || verifying}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-xl shadow-md flex items-center justify-center gap-2 border-none"
             >
-              <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
-              Kontrak: {formatAddress(BLOCKCHAIN_CONFIG.contractAddress)}
-            </a>
-            <Button variant="secondary" size="sm" onClick={onClose}>
-              Tutup
+              {submittingToChain ? (
+                <>
+                  <Lucide icon="Loader2" className="w-4 h-4 animate-spin" />
+                  Menyegel Penawaran via MetaMask...
+                </>
+              ) : onChainBid && Number(onChainBid.submittedAt) > 0 ? (
+                <>
+                  <Lucide icon="RefreshCw" className="w-4 h-4" />
+                  Perbarui / Kirim Ulang Segel On-Chain
+                </>
+              ) : (
+                <>
+                  <Lucide icon="ShieldCheck" className="w-4 h-4" />
+                  Kirim Transaksi Segel Penawaran ke Sepolia
+                </>
+              )}
             </Button>
           </div>
-        </Dialog.Panel>
+
+          {/* Salin Parameter untuk Remix IDE (Keperluan Ujian/Sidang Skripsi) */}
+          <div className="pt-2 border-t border-slate-200">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Lucide icon="Code" className="w-3.5 h-3.5 text-purple-600" />
+                Parameter Remix IDE (Uji Coba Manual Dosen):
+              </span>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(remixFormattedInput, "remix")}
+                className="text-purple-600 hover:text-purple-700 flex items-center gap-1 text-[11px] font-semibold"
+              >
+                <Lucide icon={copiedRemix ? "Check" : "Copy"} className="w-3 h-3" />
+                {copiedRemix ? "Tersalin" : "Salin Parameter Remix"}
+              </button>
+            </div>
+            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[10px] text-slate-200 break-all select-all">
+              {remixFormattedInput}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200 text-xs">
+          <a
+            href={getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold hover:underline"
+          >
+            <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
+            Kontrak: {formatAddress(BLOCKCHAIN_CONFIG.contractAddress)}
+          </a>
+          <Button
+            type="button"
+            variant="outline-secondary"
+            size="sm"
+            onClick={onClose}
+            className="border-slate-300 text-slate-700 hover:bg-slate-100"
+          >
+            Tutup
+          </Button>
+        </div>
+      </Dialog.Panel>
     </Dialog>
   );
 };

@@ -116,31 +116,31 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <Dialog.Panel className="w-full max-w-xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-white my-8">
+      <Dialog.Panel className="w-full max-w-xl bg-white dark:bg-darkmode-600 border border-slate-200/80 dark:border-darkmode-400 rounded-2xl shadow-2xl overflow-hidden text-slate-800 dark:text-white my-8">
         {/* Header */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 p-6 border-b border-slate-800">
+        <div className="p-6 border-b border-slate-200/80 dark:border-darkmode-400 bg-slate-50/50 dark:bg-darkmode-700/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 shadow-inner">
-                <Lucide icon="Trophy" className="w-6 h-6" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 shadow-sm">
+                <Lucide icon="Trophy" className="w-5 h-5 stroke-[2]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white tracking-wide">
+                  <h3 className="text-base font-bold text-slate-800 dark:text-white tracking-wide">
                     Penetapan Pemenang Lelang
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     awardWinner()
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Penguncian Pemenang & Berita Acara Hasil Pemilihan (BAHP) ke Blockchain
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/80 transition-colors"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-darkmode-500 transition-colors"
             >
               <Lucide icon="X" className="w-5 h-5" />
             </button>
@@ -149,16 +149,21 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
 
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Status On-Chain Live */}
-          <div className="rounded-xl border p-4 bg-slate-800/50">
+          <div className={clsx(
+            "rounded-xl border p-4 transition-all",
+            isAlreadyAwarded
+              ? "bg-emerald-50/80 border-emerald-200 text-emerald-950"
+              : "bg-blue-50/80 border-blue-200 text-blue-950"
+          )}>
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Lucide icon="Activity" className="w-4 h-4 text-emerald-400" />
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                <Lucide icon="Activity" className="w-4 h-4 text-emerald-600" />
                 Status Smart Contract Sepolia
               </div>
               <button
                 onClick={checkTenderState}
                 disabled={verifying}
-                className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium"
+                className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-semibold"
               >
                 <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", verifying && "animate-spin")} />
                 {verifying ? "Mengecek..." : "Perbarui"}
@@ -166,37 +171,37 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
             </div>
 
             {verifying ? (
-              <div className="flex items-center gap-2 text-xs text-slate-300 py-1">
-                <Lucide icon="Loader2" className="w-4 h-4 animate-spin text-emerald-400" />
+              <div className="flex items-center gap-2 text-xs text-slate-600 py-1">
+                <Lucide icon="Loader2" className="w-4 h-4 animate-spin text-emerald-600" />
                 Membaca status terkini dari blockchain Sepolia...
               </div>
             ) : isAlreadyAwarded ? (
-              <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs space-y-1">
-                <div className="flex items-center gap-2 font-bold text-emerald-300">
-                  <Lucide icon="CheckCircle2" className="w-4 h-4 text-emerald-400" />
+              <div className="p-3 rounded-lg bg-white border border-emerald-200 text-slate-800 text-xs space-y-1 shadow-sm">
+                <div className="flex items-center gap-2 font-bold text-emerald-700">
+                  <Lucide icon="CheckCircle2" className="w-4 h-4 text-emerald-600" />
                   Pemenang Telah Terkunci di Blockchain!
                 </div>
-                <div>
+                <div className="mt-1">
                   Pemenang Sah On-Chain:{" "}
-                  <span className="font-bold text-white">Vendor ID #{Number(onChainTender.winnerVendorId)}</span>
+                  <span className="font-bold text-slate-900">Vendor ID #{Number(onChainTender.winnerVendorId)}</span>
                 </div>
                 {isCurrentWinner ? (
-                  <span className="inline-block mt-1 text-[11px] font-semibold text-emerald-400 bg-emerald-900/60 px-2 py-0.5 rounded border border-emerald-700">
+                  <span className="inline-block mt-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full border border-emerald-200">
                     ✓ Vendor Ini Terkonfirmasi Sebagai Pemenang Resmi
                   </span>
                 ) : (
-                  <span className="inline-block mt-1 text-[11px] font-semibold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">
+                  <span className="inline-block mt-1 text-[11px] font-semibold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
                     ⚠ Pemenang yang terkunci adalah Vendor #{Number(onChainTender.winnerVendorId)}
                   </span>
                 )}
               </div>
             ) : (
-              <div className="p-3 rounded-lg bg-blue-950/40 border border-blue-500/40 text-blue-200 text-xs">
-                <div className="flex items-center gap-1.5 font-semibold text-blue-300">
-                  <Lucide icon="Info" className="w-4 h-4 text-blue-400 shrink-0" />
+              <div className="p-3 rounded-lg bg-white/80 border border-blue-200 text-blue-900 text-xs shadow-sm">
+                <div className="flex items-center gap-1.5 font-bold text-blue-800">
+                  <Lucide icon="Info" className="w-4 h-4 text-blue-600 shrink-0" />
                   Belum Ada Pemenang yang Dikunci On-Chain
                 </div>
-                <p className="mt-1 text-slate-300">
+                <p className="mt-1 text-slate-600">
                   Tender #{tenderId} berada pada status Published. Siap untuk dikunci dengan penetapan pemenang lelang.
                 </p>
               </div>
@@ -205,23 +210,23 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
 
           {/* Rincian Pemenang */}
           <div className="space-y-2.5">
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Rincian Calon Pemenang
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-700/60">
-                <span className="text-slate-400">Tender ID:</span>
-                <div className="font-bold text-white text-sm">#{tenderId}</div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-500 font-medium">Tender ID:</span>
+                <div className="font-bold text-slate-800 text-sm mt-0.5">#{tenderId}</div>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-700/60">
-                <span className="text-slate-400">Vendor Pemenang:</span>
-                <div className="font-bold text-emerald-400 text-sm truncate">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-500 font-medium">Vendor Pemenang:</span>
+                <div className="font-bold text-emerald-600 text-sm truncate mt-0.5">
                   #{winnerVendorId} - {namaVendor}
                 </div>
               </div>
-              <div className="col-span-2 p-2.5 rounded-lg bg-slate-800/40 border border-slate-700/60">
-                <span className="text-slate-400">Harga Kontrak / Penawaran Final:</span>
-                <div className="font-bold text-emerald-400 text-base">
+              <div className="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-500 font-medium">Harga Kontrak / Penawaran Final:</span>
+                <div className="font-bold text-emerald-600 text-lg mt-0.5">
                   Rp {Number(finalPrice).toLocaleString("id-ID")}
                 </div>
               </div>
@@ -230,19 +235,19 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
 
           {/* Transaksi Sukses */}
           {realTxHash && (
-            <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-1.5 text-xs">
-              <div className="flex items-center gap-2 font-bold text-emerald-300">
-                <Lucide icon="CheckCircle" className="w-4 h-4 text-emerald-400" />
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1.5 text-xs">
+              <div className="flex items-center gap-2 font-bold text-emerald-800">
+                <Lucide icon="CheckCircle" className="w-4 h-4 text-emerald-600" />
                 Transaksi Sukses Tercatat di Sepolia!
               </div>
-              <div className="text-[11px] text-slate-300">
-                Tx Hash: <span className="font-mono text-emerald-200">{realTxHash}</span>
+              <div className="text-[11px] text-slate-600">
+                Tx Hash: <span className="font-mono text-emerald-800 font-bold">{realTxHash}</span>
               </div>
               <a
                 href={getExplorerTxUrl(realTxHash)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 underline font-medium pt-1"
+                className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 underline font-semibold pt-1"
               >
                 <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
                 Buka Bukti Transaksi di Sepolia Etherscan
@@ -251,8 +256,8 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
           )}
 
           {/* Tombol Eksekusi Web3 */}
-          <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 space-y-3">
-            <div className="text-xs text-slate-300">
+          <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 space-y-3">
+            <div className="text-xs text-slate-600">
               Dengan mengunci penetapan ini, smart contract akan mencatat vendor terpilih secara permanen. Status pemenang tidak dapat diubah secara sepihak untuk menjamin prinsip keadilan pengadaan.
             </div>
 
@@ -260,7 +265,7 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
               variant="primary"
               onClick={handleExecuteAwardWinner}
               disabled={submitting || verifying || isAlreadyAwarded}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 rounded-xl shadow-md flex items-center justify-center gap-2 disabled:opacity-50 border-none"
             >
               {submitting ? (
                 <>
@@ -282,39 +287,45 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
           </div>
 
           {/* Salin Parameter Remix IDE */}
-          <div className="pt-2 border-t border-slate-800">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-              <span className="flex items-center gap-1.5">
-                <Lucide icon="Code" className="w-3.5 h-3.5 text-purple-400" />
+          <div className="pt-2 border-t border-slate-200">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Lucide icon="Code" className="w-3.5 h-3.5 text-purple-600" />
                 Parameter Remix IDE (Uji Coba Penguji):
               </span>
               <button
                 type="button"
                 onClick={copyRemixInput}
-                className="text-purple-400 hover:text-purple-300 flex items-center gap-1 text-[11px]"
+                className="text-purple-600 hover:text-purple-700 flex items-center gap-1 text-[11px] font-semibold"
               >
                 <Lucide icon={copiedRemix ? "Check" : "Copy"} className="w-3 h-3" />
                 {copiedRemix ? "Tersalin" : "Salin Parameter"}
               </button>
             </div>
-            <div className="p-2 rounded bg-black/40 border border-slate-800 font-mono text-[10px] text-slate-300 break-all select-all">
+            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[10px] text-slate-200 break-all select-all">
               {remixFormattedInput}
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 bg-slate-950 border-t border-slate-800 text-xs">
+        <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200 text-xs">
           <a
             href={getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 underline"
+            className="text-emerald-600 hover:text-emerald-700 flex items-center gap-1 font-semibold hover:underline"
           >
             <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
             Kontrak: {formatAddress(BLOCKCHAIN_CONFIG.contractAddress)}
           </a>
-          <Button variant="secondary" size="sm" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline-secondary"
+            size="sm"
+            onClick={onClose}
+            className="border-slate-300 text-slate-700 hover:bg-slate-100"
+          >
             Tutup
           </Button>
         </div>

@@ -137,46 +137,46 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <Dialog.Panel className="w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-white my-8">
+      <Dialog.Panel className="w-full max-w-2xl bg-white dark:bg-darkmode-600 border border-slate-200/80 dark:border-darkmode-400 rounded-2xl shadow-2xl overflow-hidden text-slate-800 dark:text-white my-8">
         {/* Header */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 p-6 border-b border-slate-800">
+        <div className="p-6 border-b border-slate-200/80 dark:border-darkmode-400 bg-slate-50/50 dark:bg-darkmode-700/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/20 border border-purple-400/40 text-purple-400 shadow-inner">
-                <Lucide icon="FileCheck" className="w-6 h-6" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 shadow-sm">
+                <Lucide icon="FileCheck" className="w-5 h-5 stroke-[2]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-white tracking-wide">
+                  <h3 className="text-base font-bold text-slate-800 dark:text-white tracking-wide">
                     Verifikasi Dokumen & TTE On-Chain
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                     verifyDocumentHash()
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Uji Keaslian Berkas PDF (Kontrak / KAK / Penawaran) terhadap Hash Smart Contract Sepolia
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/80 transition-colors"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-darkmode-500 transition-colors"
             >
               <Lucide icon="X" className="w-5 h-5" />
             </button>
           </div>
 
           {/* Mode Switcher */}
-          <div className="flex gap-2 mt-5 bg-black/40 p-1 rounded-xl border border-slate-800 text-xs">
+          <div className="flex gap-2 mt-5 bg-slate-100 dark:bg-darkmode-800 p-1 rounded-xl border border-slate-200/80 dark:border-darkmode-700 text-xs">
             <button
               type="button"
               onClick={() => setActiveTab("verify")}
               className={clsx(
                 "flex-1 py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all",
                 activeTab === "verify"
-                  ? "bg-purple-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white dark:bg-darkmode-600 text-purple-700 dark:text-purple-300 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
               )}
             >
               <Lucide icon="Search" className="w-3.5 h-3.5" />
@@ -188,8 +188,8 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
               className={clsx(
                 "flex-1 py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all",
                 activeTab === "register"
-                  ? "bg-purple-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-white dark:bg-darkmode-600 text-purple-700 dark:text-purple-300 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
               )}
             >
               <Lucide icon="PenTool" className="w-3.5 h-3.5" />
@@ -201,9 +201,9 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
         <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* File Upload Section */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center justify-between">
               <span>Unggah Berkas PDF Dokumen:</span>
-              <span className="text-[11px] font-normal text-slate-500">Format PDF (Maks. 25 MB)</span>
+              <span className="text-[11px] font-normal text-slate-400">Format PDF (Maks. 25 MB)</span>
             </label>
 
             <input
@@ -217,27 +217,27 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
             {!selectedFile ? (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-700 hover:border-purple-500 rounded-xl p-5 text-center cursor-pointer transition-all bg-slate-800/40 hover:bg-slate-800/80 group"
+                className="border-2 border-dashed border-slate-300 hover:border-purple-500 rounded-xl p-5 text-center cursor-pointer transition-all bg-slate-50 hover:bg-purple-50/30 group"
               >
-                <Lucide icon="UploadCloud" className="w-8 h-8 text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                <div className="text-sm font-semibold text-slate-200">
+                <Lucide icon="UploadCloud" className="w-8 h-8 text-purple-500 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <div className="text-sm font-semibold text-slate-800">
                   Pilih Dokumen PDF untuk Diuji
                 </div>
-                <div className="text-xs text-slate-400 mt-0.5">
+                <div className="text-xs text-slate-500 mt-0.5">
                   Klik untuk memilih file PDF dari laptop Anda
                 </div>
               </div>
             ) : (
-              <div className="p-3.5 rounded-xl border border-purple-500/40 bg-purple-950/20 flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-xl border border-purple-200 bg-purple-50/50 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
                     <Lucide icon="FileText" className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white truncate">
+                    <div className="text-sm font-semibold text-slate-900 truncate">
                       {selectedFile.name}
                     </div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-500 mt-0.5">
                       {(selectedFile.size / 1024).toFixed(1)} KB • Siap Diuji
                     </div>
                   </div>
@@ -250,7 +250,7 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
                     setVerificationResult(null);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
-                  className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors hover:bg-white"
                 >
                   <Lucide icon="Trash2" className="w-4 h-4" />
                 </button>
@@ -262,10 +262,10 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
           {fileHash && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-300">Fingerprint Kriptografis (SHA-256):</span>
-                <span className="text-[10px] text-purple-400 font-mono">32-Byte Keccak/SHA256</span>
+                <span className="font-semibold text-slate-700">Fingerprint Kriptografis (SHA-256):</span>
+                <span className="text-[10px] text-purple-600 font-mono font-bold">32-Byte Keccak/SHA256</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-black/60 border border-slate-700 font-mono text-[11px] text-purple-300 break-all select-all">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 font-mono text-[11px] text-cyan-300 break-all select-all">
                 {fileHash}
               </div>
             </div>
@@ -278,7 +278,7 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
                 variant="primary"
                 onClick={handleVerifyOnChain}
                 disabled={!fileHash || verifying || calculatingHash}
-                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 shadow-lg flex items-center justify-center gap-2"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-11 rounded-xl shadow-md flex items-center justify-center gap-2 border-none"
               >
                 {verifying ? (
                   <>
@@ -299,22 +299,22 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
                   className={clsx(
                     "p-4 rounded-xl border space-y-2 transition-all",
                     verificationResult
-                      ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-200"
-                      : "bg-rose-950/40 border-rose-500/50 text-rose-200"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+                      : "bg-rose-50 border-rose-200 text-rose-950"
                   )}
                 >
                   <div className="flex items-center gap-2 text-sm font-bold">
                     <Lucide
                       icon={verificationResult ? "CheckCircle2" : "ShieldAlert"}
-                      className={clsx("w-5 h-5", verificationResult ? "text-emerald-400" : "text-rose-400")}
+                      className={clsx("w-5 h-5", verificationResult ? "text-emerald-600" : "text-rose-600")}
                     />
-                    <span>
+                    <span className={verificationResult ? "text-emerald-800" : "text-rose-800"}>
                       {verificationResult
                         ? "DOKUMEN ASLI & TERVERIFIKASI ON-CHAIN!"
                         : "PERINGATAN: DOKUMEN TIDAK TERDAFTAR / TELAH DIMODIFIKASI!"}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-xs text-slate-600">
                     {verificationResult
                       ? "Sidik jari SHA-256 berkas ini COCOK 100% dengan data yang tersimpan di Smart Contract Sepolia. Dokumen ini sah secara digital dan tidak pernah diubah sejak ditandatangani."
                       : "Hash berkas ini TIDAK DITEMUKAN di catatan smart contract. Jika dokumen ini adalah kontrak resmi, berkas mungkin telah diedit atau belum didaftarkan."}
@@ -327,21 +327,21 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
             <form onSubmit={handleRegisterSignature} className="space-y-3 pt-2">
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="text-slate-400 font-semibold uppercase">Ref ID (ID Kontrak):</label>
+                  <label className="text-slate-600 font-semibold uppercase">Ref ID (ID Kontrak):</label>
                   <FormInput
                     type="number"
                     value={refId}
                     onChange={(e) => setRefId(Number(e.target.value))}
                     required
-                    className="mt-1 bg-slate-800/60 border-slate-700 text-white"
+                    className="mt-1 bg-white border-slate-300 text-slate-800 focus:border-purple-500"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold uppercase">Jenis Dokumen:</label>
+                  <label className="text-slate-600 font-semibold uppercase">Jenis Dokumen:</label>
                   <FormSelect
                     value={docType}
                     onChange={(e) => setDocType(e.target.value)}
-                    className="mt-1 bg-slate-800/60 border-slate-700 text-white"
+                    className="mt-1 bg-white border-slate-300 text-slate-800 focus:border-purple-500"
                   >
                     <option value="KONTRAK">Surat Perjanjian Kontrak</option>
                     <option value="BAHP">Berita Acara Hasil Pemilihan (BAHP)</option>
@@ -351,38 +351,38 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
                   </FormSelect>
                 </div>
                 <div className="col-span-2">
-                  <label className="text-slate-400 font-semibold uppercase">Nama Penandatangan (TTE):</label>
+                  <label className="text-slate-600 font-semibold uppercase">Nama Penandatangan (TTE):</label>
                   <FormInput
                     type="text"
                     value={signerName}
                     onChange={(e) => setSignerName(e.target.value)}
                     required
-                    className="mt-1 bg-slate-800/60 border-slate-700 text-white"
+                    className="mt-1 bg-white border-slate-300 text-slate-800 focus:border-purple-500"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-slate-400 font-semibold uppercase">Nomor Sertifikat TTE / BSrE:</label>
+                  <label className="text-slate-600 font-semibold uppercase">Nomor Sertifikat TTE / BSrE:</label>
                   <FormInput
                     type="text"
                     value={bsreCertId}
                     onChange={(e) => setBsreCertId(e.target.value)}
                     required
-                    className="mt-1 bg-slate-800/60 border-slate-700 text-white"
+                    className="mt-1 bg-white border-slate-300 text-slate-800 focus:border-purple-500"
                   />
                 </div>
               </div>
 
               {registeredTxHash && (
-                <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-emerald-300">
-                    <Lucide icon="CheckCircle" className="w-4 h-4 text-emerald-400" />
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                    <Lucide icon="CheckCircle" className="w-4 h-4 text-emerald-600" />
                     Tanda Tangan Berhasil Dicatat di Sepolia!
                   </div>
                   <a
                     href={getExplorerTxUrl(registeredTxHash)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline font-medium block truncate"
+                    className="text-blue-600 hover:text-blue-700 underline font-medium block truncate"
                   >
                     {registeredTxHash}
                   </a>
@@ -393,7 +393,7 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
                 type="submit"
                 variant="primary"
                 disabled={!fileHash || submittingSign || calculatingHash}
-                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 shadow-lg flex items-center justify-center gap-2 mt-3"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-11 rounded-xl shadow-md flex items-center justify-center gap-2 mt-3 border-none"
               >
                 {submittingSign ? (
                   <>
@@ -412,17 +412,23 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 bg-slate-950 border-t border-slate-800 text-xs">
+        <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200 text-xs">
           <a
             href={getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-400 hover:text-purple-300 flex items-center gap-1 underline"
+            className="text-purple-600 hover:text-purple-700 flex items-center gap-1 font-semibold hover:underline"
           >
             <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
             Kontrak: {formatAddress(BLOCKCHAIN_CONFIG.contractAddress)}
           </a>
-          <Button variant="secondary" size="sm" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline-secondary"
+            size="sm"
+            onClick={onClose}
+            className="border-slate-300 text-slate-700 hover:bg-slate-100"
+          >
             Tutup
           </Button>
         </div>
