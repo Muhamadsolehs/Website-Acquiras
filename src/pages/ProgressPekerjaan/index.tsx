@@ -409,24 +409,26 @@ function Main() {
                       {selected.tanggal_selesai || "-"}
                     </div>
                   </div>
-                  <div className="col-span-2 pt-2 border-t border-slate-200/60 dark:border-darkmode-500 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <span className="text-xs text-slate-500">Integritas Dokumen Kontrak:</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDocModalData({
-                          refId: selected.id,
-                          docType: "KONTRAK",
-                          signerName: "Pejabat Pembuat Komitmen (PPK)",
-                        });
-                        setDocVerifyModalOpen(true);
-                      }}
-                      className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <Lucide icon="ShieldCheck" className="w-3.5 h-3.5 text-primary" />
-                      Cek / Segel TTE Kontrak On-Chain
-                    </button>
-                  </div>
+                  {isAdmin && (
+                    <div className="col-span-2 pt-2 border-t border-slate-200/60 dark:border-darkmode-500 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <span className="text-xs text-slate-500">Integritas Dokumen Kontrak:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDocModalData({
+                            refId: selected.id,
+                            docType: "KONTRAK",
+                            signerName: "Pejabat Pembuat Komitmen (PPK)",
+                          });
+                          setDocVerifyModalOpen(true);
+                        }}
+                        className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Lucide icon="ShieldCheck" className="w-3.5 h-3.5 text-primary" />
+                        Cek / Segel TTE Kontrak On-Chain
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Surat Jalan Section */}
@@ -471,22 +473,24 @@ function Main() {
                           {selected.no_surat_jalan ? "Ubah Surat Jalan" : "Terbitkan Surat Jalan"}
                         </Button>
                       )}
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="text-xs flex items-center gap-1.5 bg-blue-50/50 hover:bg-blue-100 text-blue-700 border-blue-300"
-                        onClick={() => {
-                          setDocModalData({
-                            refId: selected.id,
-                            docType: "SURAT_JALAN",
-                            signerName: isAdmin ? "Pejabat Pembuat Komitmen (PPK)" : (currentUser?.vendor?.nama_perusahaan || "Penyedia"),
-                          });
-                          setDocVerifyModalOpen(true);
-                        }}
-                      >
-                        <Lucide icon="ShieldCheck" className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Segel / Cek On-Chain</span>
-                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          className="text-xs flex items-center gap-1.5 bg-blue-50/50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                          onClick={() => {
+                            setDocModalData({
+                              refId: selected.id,
+                              docType: "SURAT_JALAN",
+                              signerName: "Pejabat Pembuat Komitmen (PPK)",
+                            });
+                            setDocVerifyModalOpen(true);
+                          }}
+                        >
+                          <Lucide icon="ShieldCheck" className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Segel / Cek On-Chain</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -722,14 +726,16 @@ function Main() {
           </Dialog.Panel>
         </Dialog>
 
-        {/* Modal Verifikasi / Segel Dokumen Kriptografis On-Chain */}
-        <BlockchainVerifyDocModal
-          open={docVerifyModalOpen}
-          onClose={() => setDocVerifyModalOpen(false)}
-          defaultRefId={docModalData.refId}
-          defaultDocType={docModalData.docType}
-          defaultSignerName={docModalData.signerName}
-        />
+        {/* Modal Verifikasi / Segel Dokumen Kriptografis On-Chain (Khusus Admin/PPK) */}
+        {isAdmin && (
+          <BlockchainVerifyDocModal
+            open={docVerifyModalOpen}
+            onClose={() => setDocVerifyModalOpen(false)}
+            defaultRefId={docModalData.refId}
+            defaultDocType={docModalData.docType}
+            defaultSignerName={docModalData.signerName}
+          />
+        )}
       </div>
     </div>
   );

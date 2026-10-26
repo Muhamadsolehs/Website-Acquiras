@@ -7,7 +7,6 @@ import ReportBarChart1 from "@/components/ReportBarChart1";
 import ReportBarChart6 from "@/components/ReportBarChart6";
 import ReportLineChart1 from "@/components/ReportLineChart1";
 import api from "@/api/axiosinstance";
-import { BlockchainVerifyDocModal } from "@/components/Blockchain/BlockchainVerifyDocModal";
 import { BLOCKCHAIN_CONFIG, formatAddress, getExplorerAddressUrl } from "@/config/blockchain";
 
 function GuestBeranda() {
@@ -19,7 +18,6 @@ function GuestBeranda() {
     persentase_rup: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [verifyDocModalOpen, setVerifyDocModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -89,14 +87,6 @@ function GuestBeranda() {
               <Lucide icon="UserPlus" className="h-4 w-4" />
               Daftar Sebagai Penyedia
             </Link>
-            <button
-              type="button"
-              onClick={() => setVerifyDocModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition"
-            >
-              <Lucide icon="ShieldCheck" className="h-4 w-4 text-indigo-200" />
-              Verifikasi Dokumen TTE (On-Chain)
-            </button>
           </div>
         </div>
         <div className="absolute bottom-0 right-0 opacity-20">
@@ -225,35 +215,20 @@ function GuestBeranda() {
             </div>
           </div>
 
-          <div className="shrink-0 flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={() => setVerifyDocModalOpen(true)}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all cursor-pointer"
-            >
-              <Lucide icon="FileSearch" className="w-4 h-4 text-white" />
-              <span>Uji Keaslian Dokumen PDF</span>
-            </button>
+          <div className="shrink-0 flex items-center">
             <a
               href={getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-sm font-semibold text-white transition-all"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-sm font-semibold text-white transition-all shadow-md"
             >
-              <Lucide icon="Globe" className="w-4 h-4 text-slate-300" />
-              <span>Explorer Sepolia</span>
+              <Lucide icon="Globe" className="w-4 h-4 text-indigo-300" />
+              <span>Lihat Ledger Sepolia</span>
+              <Lucide icon="ExternalLink" className="w-3.5 h-3.5 text-slate-300" />
             </a>
           </div>
         </div>
       </div>
-
-      {/* Modal Verifikasi Dokumen TTE */}
-      <BlockchainVerifyDocModal
-        open={verifyDocModalOpen}
-        onClose={() => setVerifyDocModalOpen(false)}
-        defaultDocType="KONTRAK"
-        defaultSignerName="Auditor / Penguji Publik"
-      />
     </div>
   );
 }
