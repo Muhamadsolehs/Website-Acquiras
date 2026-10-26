@@ -130,7 +130,7 @@ const AuditModal: React.FC<AuditModalProps> = ({
   onCopy,
 }) => {
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} size="lg">
       <Dialog.Panel className="p-6 max-w-xl w-full bg-white dark:bg-white border border-slate-200/80 text-slate-800 rounded-2xl shadow-2xl my-8">
         <div className="flex items-center justify-between pb-4 border-b border-slate-200/80">
           <div className="flex items-center gap-3">

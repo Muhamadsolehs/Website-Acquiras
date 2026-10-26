@@ -136,7 +136,7 @@ export const BlockchainVerifyDocModal: React.FC<BlockchainVerifyDocModalProps> =
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} size="lg">
       <Dialog.Panel className="p-6 max-w-2xl w-full bg-white dark:bg-white rounded-2xl shadow-2xl border border-slate-200/80 text-slate-800 my-8">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200/80">

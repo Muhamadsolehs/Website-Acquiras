@@ -203,7 +203,7 @@ export const BlockchainBidModal: React.FC<BlockchainBidModalProps> = ({
   }, [tenderId, vendorId, nilaiPenawaran, localBidHash]);
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} size="lg">
       <Dialog.Panel className="p-6 max-w-2xl w-full bg-white dark:bg-white rounded-2xl shadow-2xl border border-slate-200/80 text-slate-800 my-8">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200/80">
@@ -381,66 +381,67 @@ export const BlockchainBidModal: React.FC<BlockchainBidModalProps> = ({
         </div>
 
         {/* Footer Actions (100% Real Execution) */}
-        <div className="mt-5 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row gap-2.5 justify-between items-center">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Tombol Eksekusi Transaksi NYATA */}
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleSendBidTransaction}
-              disabled={submittingToChain || verifying}
-              className="text-xs bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-1.5 shadow-md shadow-primary/20"
-            >
-              <Lucide icon={submittingToChain ? "Loader2" : onChainBid && Number(onChainBid.submittedAt) > 0 ? "RefreshCw" : "Send"} className={clsx("w-3.5 h-3.5", submittingToChain && "animate-spin")} />
-              {submittingToChain
-                ? "Menyegel Penawaran via MetaMask..."
-                : onChainBid && Number(onChainBid.submittedAt) > 0
-                ? "Perbarui / Kirim Ulang Segel On-Chain"
-                : "Kirim Transaksi ke Blockchain (MetaMask)"}
-            </Button>
+        <div className="mt-5 pt-4 border-t border-slate-200/80">
+          {/* Tombol Eksekusi Transaksi NYATA */}
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleSendBidTransaction}
+            disabled={submittingToChain || verifying}
+            className="w-full h-11 text-xs sm:text-sm bg-primary hover:bg-primary/90 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md shadow-primary/20 border-none"
+          >
+            <Lucide icon={submittingToChain ? "Loader2" : onChainBid && Number(onChainBid.submittedAt) > 0 ? "RefreshCw" : "Send"} className={clsx("w-4 h-4", submittingToChain && "animate-spin")} />
+            {submittingToChain
+              ? "Menyegel Penawaran via MetaMask..."
+              : onChainBid && Number(onChainBid.submittedAt) > 0
+              ? "Perbarui / Kirim Ulang Segel On-Chain (MetaMask)"
+              : "Kirim Transaksi Segel Penawaran (MetaMask)"}
+          </Button>
 
-            {/* Tombol Re-Check Verifikasi */}
-            <Button
-              type="button"
-              variant="outline-secondary"
-              onClick={verifyBidWithOnChainState}
-              disabled={verifying}
-              className="text-xs flex items-center justify-center gap-1.5 border-slate-300 text-slate-700"
-              title="Cek ulang kecocokan data web dengan smart contract"
-            >
-              <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", { "animate-spin": verifying })} />
-              {verifying ? "Mengecek..." : "Cek On-Chain"}
-            </Button>
-          </div>
+          {/* Baris Tombol Aksi Tambahan */}
+          <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Tombol Re-Check Verifikasi */}
+              <Button
+                type="button"
+                variant="outline-secondary"
+                onClick={verifyBidWithOnChainState}
+                disabled={verifying}
+                className="text-xs flex items-center gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-xl"
+                title="Cek ulang kecocokan data web dengan smart contract"
+              >
+                <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", { "animate-spin": verifying })} />
+                <span>{verifying ? "Mengecek..." : "Cek On-Chain"}</span>
+              </Button>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <Button
-              type="button"
-              variant="outline-secondary"
-              onClick={() => copyToClipboard(remixFormattedInput, "remix")}
-              className="text-xs flex items-center gap-1.5 border-slate-300"
-              title="Salin parameter input untuk eksekusi langsung di Remix IDE"
-            >
-              <Lucide icon={copiedRemix ? "Check" : "Code"} className="w-3.5 h-3.5 text-slate-600" />
-              {copiedRemix ? "Tersalin!" : "Input Remix"}
-            </Button>
+              <Button
+                type="button"
+                variant="outline-secondary"
+                onClick={() => copyToClipboard(remixFormattedInput, "remix")}
+                className="text-xs flex items-center gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-xl"
+                title="Salin parameter input untuk eksekusi langsung di Remix IDE"
+              >
+                <Lucide icon={copiedRemix ? "Check" : "Code"} className="w-3.5 h-3.5 text-slate-600" />
+                <span>{copiedRemix ? "Tersalin!" : "Input Remix"}</span>
+              </Button>
 
-            <Button
-              type="button"
-              variant="outline-primary"
-              onClick={() => window.open(getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress), "_blank")}
-              className="text-xs flex items-center gap-1.5"
-              title="Buka Etherscan Sepolia Explorer"
-            >
-              <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
-              Explorer
-            </Button>
+              <Button
+                type="button"
+                variant="outline-primary"
+                onClick={() => window.open(getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress), "_blank")}
+                className="text-xs flex items-center gap-1.5 text-blue-600 border-blue-300 hover:bg-blue-50 px-3 py-2 rounded-xl"
+                title="Buka Etherscan Sepolia Explorer"
+              >
+                <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
+                <span>Explorer</span>
+              </Button>
+            </div>
 
             <Button
               type="button"
               variant="outline-secondary"
               onClick={onClose}
-              className="text-xs border-slate-300 px-4"
+              className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100 px-4 py-2 rounded-xl shrink-0"
             >
               Tutup
             </Button>

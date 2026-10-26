@@ -115,7 +115,7 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
   const isCurrentWinner = onChainTender && Number(onChainTender.winnerVendorId) === Number(winnerVendorId);
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} size="lg">
       <Dialog.Panel className="p-6 max-w-2xl w-full bg-white dark:bg-white rounded-2xl shadow-2xl border border-slate-200/80 text-slate-800 my-8">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200/80">
@@ -258,64 +258,64 @@ export const BlockchainAwardModal: React.FC<BlockchainAwardModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-5 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row gap-2.5 justify-between items-center">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleExecuteAwardWinner}
-              disabled={submitting || verifying || isAlreadyAwarded}
-              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 border-none disabled:opacity-50"
-            >
-              <Lucide icon={submitting ? "Loader2" : isAlreadyAwarded ? "CheckCircle2" : "ShieldCheck"} className={clsx("w-3.5 h-3.5", submitting && "animate-spin")} />
-              {submitting
-                ? "Mengunci Pemenang via MetaMask..."
-                : isAlreadyAwarded
-                ? "Pemenang Sudah Terkunci"
-                : "Kunci Penetapan Pemenang (MetaMask)"}
-            </Button>
+        <div className="mt-5 pt-4 border-t border-slate-200/80">
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleExecuteAwardWinner}
+            disabled={submitting || verifying || isAlreadyAwarded}
+            className="w-full h-11 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 border-none disabled:opacity-50"
+          >
+            <Lucide icon={submitting ? "Loader2" : isAlreadyAwarded ? "CheckCircle2" : "ShieldCheck"} className={clsx("w-4 h-4", submitting && "animate-spin")} />
+            {submitting
+              ? "Mengunci Pemenang via MetaMask..."
+              : isAlreadyAwarded
+              ? "Pemenang Sudah Terkunci di Blockchain"
+              : "Kunci Penetapan Pemenang (MetaMask)"}
+          </Button>
 
-            <Button
-              type="button"
-              variant="outline-secondary"
-              onClick={checkTenderState}
-              disabled={verifying}
-              className="text-xs flex items-center justify-center gap-1.5 border-slate-300 text-slate-700"
-              title="Cek ulang status tender di blockchain"
-            >
-              <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", { "animate-spin": verifying })} />
-              {verifying ? "Mengecek..." : "Cek On-Chain"}
-            </Button>
-          </div>
+          <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                type="button"
+                variant="outline-secondary"
+                onClick={checkTenderState}
+                disabled={verifying}
+                className="text-xs flex items-center gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-xl"
+                title="Cek ulang status tender di blockchain"
+              >
+                <Lucide icon="RefreshCw" className={clsx("w-3.5 h-3.5", { "animate-spin": verifying })} />
+                <span>{verifying ? "Mengecek..." : "Cek On-Chain"}</span>
+              </Button>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <Button
-              type="button"
-              variant="outline-secondary"
-              onClick={copyRemixInput}
-              className="text-xs flex items-center gap-1.5 border-slate-300"
-              title="Salin parameter input untuk eksekusi langsung di Remix IDE"
-            >
-              <Lucide icon={copiedRemix ? "Check" : "Code"} className="w-3.5 h-3.5 text-slate-600" />
-              {copiedRemix ? "Tersalin!" : "Input Remix"}
-            </Button>
+              <Button
+                type="button"
+                variant="outline-secondary"
+                onClick={copyRemixInput}
+                className="text-xs flex items-center gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-50 px-3 py-2 rounded-xl"
+                title="Salin parameter input untuk eksekusi langsung di Remix IDE"
+              >
+                <Lucide icon={copiedRemix ? "Check" : "Code"} className="w-3.5 h-3.5 text-slate-600" />
+                <span>{copiedRemix ? "Tersalin!" : "Input Remix"}</span>
+              </Button>
 
-            <Button
-              type="button"
-              variant="outline-primary"
-              onClick={() => window.open(getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress), "_blank")}
-              className="text-xs flex items-center gap-1.5"
-              title="Buka Etherscan Sepolia Explorer"
-            >
-              <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
-              Explorer
-            </Button>
+              <Button
+                type="button"
+                variant="outline-primary"
+                onClick={() => window.open(getExplorerAddressUrl(BLOCKCHAIN_CONFIG.contractAddress), "_blank")}
+                className="text-xs flex items-center gap-1.5 text-emerald-600 border-emerald-300 hover:bg-emerald-50 px-3 py-2 rounded-xl"
+                title="Buka Etherscan Sepolia Explorer"
+              >
+                <Lucide icon="ExternalLink" className="w-3.5 h-3.5" />
+                <span>Explorer</span>
+              </Button>
+            </div>
 
             <Button
               type="button"
               variant="outline-secondary"
               onClick={onClose}
-              className="text-xs border-slate-300 px-4"
+              className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100 px-4 py-2 rounded-xl shrink-0"
             >
               Tutup
             </Button>
