@@ -114,9 +114,9 @@ function Register() {
       <div className="max-w-4xl mx-auto">
         {/* Header & Logo */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white shadow-md border border-slate-200 p-2 mb-4">
+          <Link to="/" className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white shadow-md border border-slate-200 p-2 mb-4 hover:shadow-lg transition" title="Kembali ke Beranda">
             <img src={logo} alt="Acquiras" className="w-full h-full object-contain" />
-          </div>
+          </Link>
           <h1 className="text-3xl font-bold tracking-tight text-slate-800 dark:text-white">
             Pendaftaran Vendor Baru
           </h1>

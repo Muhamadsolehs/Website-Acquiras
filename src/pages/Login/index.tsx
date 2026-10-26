@@ -119,19 +119,19 @@ function Main() {
           ])}
         >
           <div className="relative z-10 flex flex-col justify-center w-full h-full py-2 lg:py-32">
-            <div className="flex items-center justify-center w-[34px] rounded-lg h-[34px] border-theme-2 border">
-              {/* <div className="w-[16px] h-[16px] relative -rotate-45 [&_div]:bg-white">
-                  <div className="absolute w-[21%] left-0 inset-y-0 my-auto rounded-full opacity-50 h-[75%]"></div>
-                  <div className="absolute w-[21%] inset-0 m-auto h-[120%] rounded-full"></div>
-                  <div className="absolute w-[21%] right-0 inset-y-0 my-auto rounded-full opacity-50 h-[75%]"></div>
-                </div> */}
-              <img
-                src={logo}
-                alt="Acquiras"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="mt-10">
+            <Link to="/" className="inline-flex items-center gap-2.5 w-fit group">
+              <div className="flex items-center justify-center w-[34px] rounded-lg h-[34px] border-theme-2 border overflow-hidden">
+                <img
+                  src={logo}
+                  alt="Acquiras"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-primary transition">
+                &larr; Kembali ke Beranda
+              </span>
+            </Link>
+            <div className="mt-8">
               <div className="text-2xl font-medium">Sign In</div>
               <div className="mt-2.5 text-slate-600 dark:text-slate-400">
                 Belum punya akun?{" "}
@@ -139,6 +139,52 @@ function Main() {
                   Daftar disini
                 </Link>
               </div>
+
+              {localStorage.getItem("eproc_token") && (
+                <div className="my-4 rounded-xl border border-primary/25 bg-primary/5 p-4 text-xs text-slate-700 dark:text-slate-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="font-semibold text-primary">Sesi login aktif:</span>{" "}
+                      <strong>
+                        {(() => {
+                          try {
+                            const u = JSON.parse(localStorage.getItem("eproc_user") || "{}");
+                            return u.first_name || u.username || "Pengguna";
+                          } catch {
+                            return "Pengguna";
+                          }
+                        })()}
+                      </strong>{" "}
+                      ({localStorage.getItem("eproc_user_role") === "1" ? "Administrator" : "Vendor"})
+                    </div>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      className="px-2.5 py-1 text-xs shrink-0"
+                      onClick={() => navigate("/dashboard")}
+                    >
+                      Ke Dashboard
+                    </Button>
+                  </div>
+                  <div className="mt-2 text-slate-500">
+                    Ingin berganti akun? Masukkan kredensial baru di formulir bawah atau{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.removeItem("eproc_token");
+                        localStorage.removeItem("eproc_user");
+                        localStorage.removeItem("eproc_user_role");
+                        localStorage.removeItem("theme");
+                        window.location.reload();
+                      }}
+                      className="text-danger underline font-medium hover:text-red-700"
+                    >
+                      keluar dari sesi ini
+                    </button>.
+                  </div>
+                </div>
+              )}
 
               {location?.state?.registered && (
                 <Alert

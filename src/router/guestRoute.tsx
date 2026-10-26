@@ -1,12 +1,6 @@
-import { Navigate } from "react-router-dom";
-
 const GuestRoute = ({ children }: { children: JSX.Element }) => {
-  const token = localStorage.getItem("eproc_token");
-
-  if (token) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // Biarkan halaman login dan register tetap dapat diakses langsung oleh pengguna
+  // tanpa auto-redirect yang memblokir pengguna saat ingin login ulang atau berganti akun.
   return children;
 };
 
