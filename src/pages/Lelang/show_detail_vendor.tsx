@@ -242,6 +242,7 @@ const ShowDetailVendor: React.FC = () => {
   const userRole = (currentUser?.role || "").toLowerCase();
   const isVendor = Boolean(currentUser?.vendor) || userRole === "vendor";
   const isAdmin = !isVendor || userRole.includes("admin") || userRole.includes("panitia") || userRole.includes("ppk");
+  const winnerPeserta = pesertaList.find((p: any) => p.status_peserta === "Pemenang");
 
   const handleWinnerAwarded = async (result: any) => {
     try {
@@ -251,9 +252,9 @@ const ShowDetailVendor: React.FC = () => {
         });
       }
       await api.put(`/lelang/${id}`, {
-        status: "Selesai",
+        status: "Masa Sanggah",
       });
-      toast.success("Penetapan pemenang berhasil! Status lelang diperbarui menjadi Selesai.");
+      toast.success("Penetapan pemenang berhasil dicatat di Blockchain! Lelang kini memasuki tahap Masa Sanggah.");
     } catch (err: any) {
       console.error("Gagal sinkron status pemenang ke sistem database:", err);
     } finally {
@@ -297,8 +298,20 @@ const ShowDetailVendor: React.FC = () => {
               </div>
             </div>
 
-            {/* Aksi Header - Hanya tampil untuk Vendor yang berhak mendaftar / mengirim penawaran */}
-            {isVendor && (
+            {/* Tombol Tahap Masa Sanggah */}
+            {(lelang.status === "Masa Sanggah" || lelang.status === "Selesai" || Boolean(winnerPeserta)) && (
+              <button
+                type="button"
+                onClick={() => navigate(`/dashboard/lelang/masa-sanggah/${id}`)}
+                className="h-10 px-4 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
+              >
+                <Lucide icon="ShieldAlert" className="w-4 h-4 text-purple-200" />
+                <span>{isAdmin ? "Kelola Masa Sanggah" : "Tahap Masa Sanggah"}</span>
+              </button>
+            )}
+
+            {/* Aksi Header - Hanya tampil untuk Vendor yang berhak mendaftar / mengirim penawaran jika belum masa sanggah / selesai */}
+            {isVendor && lelang.status !== "Masa Sanggah" && lelang.status !== "Selesai" && (
               <div className="flex flex-wrap items-center gap-2">
                 {onChainBid && Number(onChainBid.submittedAt) > 0 ? (
                   <button
@@ -359,7 +372,11 @@ const ShowDetailVendor: React.FC = () => {
 
         {/* Badges Info Tender - Solid, Tidak Transparan */}
         <div className="flex flex-wrap gap-2 mt-4">
-          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white shadow-md border border-slate-700">
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-md border ${
+            lelang.status === "Masa Sanggah" ? "bg-purple-700 border-purple-500 text-purple-100" :
+            lelang.status === "Selesai" ? "bg-emerald-700 border-emerald-500 text-emerald-100" :
+            "bg-slate-900 border-slate-700"
+          }`}>
             <Lucide icon="AlertCircle" className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
             Status: {lelang.status}
           </span>
@@ -471,6 +488,41 @@ const ShowDetailVendor: React.FC = () => {
                 <Lucide icon="Search" className="w-3.5 h-3.5" />
                 Lihat Rincian Segel Kriptografis
               </Button>
+            </div>
+          )}
+
+          {/* Banner Pemenang Lelang & Masa Sanggah */}
+          {winnerPeserta && (
+            <div className="rounded-xl border border-purple-500/50 bg-gradient-to-r from-purple-950/60 via-slate-900 to-slate-900 p-4 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0">
+                  <Lucide icon="Trophy" className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-purple-300 tracking-wider">
+                      Pemenang Ditetapkan &bull; Tahap Masa Sanggah
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                      Winner Selected
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Pemenang: <span className="font-bold text-amber-300">{winnerPeserta.vendor?.nama_perusahaan || `Vendor #${winnerPeserta.vendor_id}`}</span> | Nilai Final:{" "}
+                    <span className="font-bold text-emerald-400">
+                      Rp {Number(winnerPeserta.nilai_penawaran || 0).toLocaleString("id-ID")}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate(`/dashboard/lelang/masa-sanggah/${id}`)}
+                className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center gap-1.5 cursor-pointer border-none shrink-0"
+              >
+                <Lucide icon="ShieldAlert" className="w-4 h-4 text-purple-200" />
+                <span>{isAdmin ? "Buka Pengelolaan Sanggahan" : "Pantau / Ajukan Sanggahan"}</span>
+              </button>
             </div>
           )}
         </div>

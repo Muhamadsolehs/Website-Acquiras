@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import Lucide from "@/components/Base/Lucide";
 import { FormInput, FormSelect, FormTextarea } from "@/components/Base/Form";
 import Table from "@/components/Base/Table";
@@ -16,7 +16,7 @@ const MasaSanggahAction: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Form states
+  // Form states (Vendor)
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,6 +32,16 @@ const MasaSanggahAction: React.FC = () => {
   const [reviewStatus, setReviewStatus] = useState("diterima");
   const [jawabanSanggah, setJawabanSanggah] = useState("");
 
+  // Admin Terbitkan Kontrak Modal
+  const [contractModalOpen, setContractModalOpen] = useState(false);
+  const [contractForm, setContractForm] = useState({
+    nomorKontrak: "",
+    tanggalKontrak: new Date().toISOString().split("T")[0],
+    tanggalMulai: new Date().toISOString().split("T")[0],
+    tanggalSelesai: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    nilaiKontrak: 0,
+  });
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -39,8 +49,19 @@ const MasaSanggahAction: React.FC = () => {
         api.get(`/lelang/${id}`),
         api.get(`/sanggahan?lelang_id=${id}`),
       ]);
-      setLelang(lelangRes.data);
+      const lelangData = lelangRes.data;
+      setLelang(lelangData);
       setSanggahanList(sanggahanRes.data || []);
+
+      // Auto-prefill contract form based on winner
+      const winner = (lelangData.peserta || []).find((p: any) => p.status_peserta === "Pemenang" || p.status === "Pemenang");
+      const winnerPrice = winner ? Number(winner.nilai_penawaran || 0) : Number(lelangData.paket?.nilai_hps || 0);
+
+      setContractForm((prev) => ({
+        ...prev,
+        nomorKontrak: prev.nomorKontrak || `KNT-${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, "0")}/${lelangData.no_lelang || id}`,
+        nilaiKontrak: winnerPrice,
+      }));
     } catch (err: any) {
       toast.error("Gagal memuat data sanggahan: " + (err.response?.data?.message || err.message));
     } finally {
@@ -60,17 +81,29 @@ const MasaSanggahAction: React.FC = () => {
     }
   }, [id]);
 
-  const isAdmin = currentUser?.role_id === 1 || currentUser?.role?.id === 1;
+  const userRole = (currentUser?.role || "").toLowerCase();
+  const isAdmin = currentUser?.role_id === 1 || currentUser?.role?.id === 1 || userRole.includes("admin") || userRole.includes("panitia") || userRole.includes("ppk");
+  const isVendor = !isAdmin;
+  const currentVendorId = currentUser?.vendor?.id || currentUser?.vendor_id || (isVendor ? currentUser?.id : null);
+
+  const pesertaList = lelang?.peserta || [];
+  const winnerPeserta = pesertaList.find((p: any) => p.status_peserta === "Pemenang" || p.status === "Pemenang");
+  const myPeserta = currentVendorId ? pesertaList.find((p: any) => p.vendor_id === currentVendorId) : null;
+  const isCurrentUserWinner = Boolean(winnerPeserta && currentVendorId && (winnerPeserta.vendor_id === currentVendorId));
+  const hasSubmittedSanggahan = sanggahanList.some((s: any) => s.vendor_id === currentVendorId);
 
   const handleSubmitSanggahan = async (e: React.FormEvent) => {
     e.preventDefault();
-    const vendorId = currentUser?.vendor?.id || 1;
+    if (!currentVendorId) {
+      toast.error("Identitas vendor tidak ditemukan.");
+      return;
+    }
 
     try {
       setSubmitting(true);
       await api.post("/sanggahan", {
         lelang_id: id,
-        vendor_id: vendorId,
+        vendor_id: currentVendorId,
         no_surat: formData.noSurat,
         tanggal_sanggah: formData.tanggalSanggah,
         alasan_sanggah: formData.alasanSanggah,
@@ -116,6 +149,44 @@ const MasaSanggahAction: React.FC = () => {
     }
   };
 
+  const handleTerbitkanKontrak = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const winVendorId = winnerPeserta?.vendor_id || lelang?.winner_vendor_id;
+    if (!winVendorId) {
+      toast.error("Pemenang lelang belum ditetapkan!");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      // Simpan ke database tabel kontrak_pekerjaan
+      await api.post("/kontrak-pekerjaan", {
+        paket_id: lelang.paket_id,
+        vendor_id: winVendorId,
+        nomor_kontrak: contractForm.nomorKontrak,
+        tanggal_kontrak: contractForm.tanggalKontrak,
+        tanggal_mulai: contractForm.tanggalMulai,
+        tanggal_selesai: contractForm.tanggalSelesai,
+        nilai_kontrak: contractForm.nilaiKontrak || Number(winnerPeserta?.nilai_penawaran || lelang?.paket?.nilai_hps || 0),
+        status_pekerjaan: "progress",
+        progres_persen: 0,
+      });
+
+      // Update status lelang menjadi Selesai
+      await api.put(`/lelang/${id}`, {
+        status: "Selesai",
+      });
+
+      toast.success("Masa Sanggah diselesaikan & Kontrak Pekerjaan resmi diterbitkan!");
+      setContractModalOpen(false);
+      navigate("/dashboard/monitoring-progress-pekerjaan");
+    } catch (err: any) {
+      toast.error("Gagal menerbitkan kontrak: " + (err.response?.data?.message || err.message));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const openReviewModal = (item: any) => {
     setSelectedSanggahan(item);
     setReviewStatus(item.status || "sedang_ditinjau");
@@ -145,10 +216,10 @@ const MasaSanggahAction: React.FC = () => {
                 variant="outline-secondary"
                 size="sm"
                 className="!text-white border-white/20"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate(`/dashboard/master-lelang/${id}`)}
               >
                 <Lucide icon="ArrowLeft" className="w-4 h-4 mr-1" />
-                Kembali
+                Kembali ke Detail Lelang
               </Button>
               <h1 className="text-2xl md:text-3xl font-bold text-white">
                 Masa Sanggah Lelang
@@ -160,22 +231,87 @@ const MasaSanggahAction: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button
-              variant="primary"
-              className="bg-primary text-white"
-              onClick={() => setShowSubmitModal(true)}
-            >
-              <Lucide icon="ShieldAlert" className="w-4 h-4 mr-2" />
-              Ajukan Sanggahan
-            </Button>
+            {/* Action buttons based on Role */}
+            {isAdmin ? (
+              <Button
+                variant="primary"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 px-4 shadow-md inline-flex items-center gap-2"
+                onClick={() => setContractModalOpen(true)}
+              >
+                <Lucide icon="Briefcase" className="w-4 h-4 text-emerald-100" />
+                <span>Selesaikan Masa Sanggah & Terbitkan Kontrak</span>
+              </Button>
+            ) : isCurrentUserWinner ? (
+              <span className="px-3.5 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold inline-flex items-center gap-1.5 shadow-md">
+                <Lucide icon="Trophy" className="w-4 h-4 text-amber-300" />
+                <span>Pemenang Lelang Terpilih</span>
+              </span>
+            ) : hasSubmittedSanggahan ? (
+              <span className="px-3.5 py-2 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold inline-flex items-center gap-1.5 shadow-md">
+                <Lucide icon="CheckCircle2" className="w-4 h-4 text-blue-300" />
+                <span>Sanggahan Anda Telah Diajukan</span>
+              </span>
+            ) : myPeserta ? (
+              <Button
+                variant="primary"
+                className="bg-primary text-white font-bold text-xs h-10 px-4 shadow-md inline-flex items-center gap-2"
+                onClick={() => setShowSubmitModal(true)}
+              >
+                <Lucide icon="ShieldAlert" className="w-4 h-4 text-amber-300" />
+                <span>Ajukan Sanggahan</span>
+              </Button>
+            ) : (
+              <span className="text-xs text-slate-300 italic bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700">
+                Hanya peserta lelang yang berhak mengajukan sanggahan
+              </span>
+            )}
           </div>
         </div>
+
+        {/* Banner Pemenang Lelang */}
+        {winnerPeserta && (
+          <div className="mt-4 p-4 rounded-xl border border-purple-500/40 bg-gradient-to-r from-purple-950/60 via-slate-900 to-slate-900 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-amber-400 shrink-0">
+                <Lucide icon="Trophy" className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-purple-300 font-bold flex items-center gap-2">
+                  <span>Pemenang Hasil Evaluasi Lelang</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                    Status: {lelang.status}
+                  </span>
+                </div>
+                <div className="text-base font-extrabold text-white mt-0.5">
+                  {winnerPeserta.vendor?.nama_perusahaan || `Vendor #${winnerPeserta.vendor_id}`} &bull;{" "}
+                  <span className="text-emerald-400">
+                    Rp {Number(winnerPeserta.nilai_penawaran || 0).toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Masa sanggah memberikan waktu bagi penyedia lain untuk mengajukan sanggahan resmi sebelum penerbitan Kontrak Kerja.
+                </p>
+              </div>
+            </div>
+
+            {isAdmin && (
+              <Button
+                variant="primary"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md font-bold text-xs shrink-0 py-2.5 px-4"
+                onClick={() => setContractModalOpen(true)}
+              >
+                <Lucide icon="FileText" className="w-4 h-4 mr-2 text-emerald-100" />
+                Terbitkan Kontrak Kerja
+              </Button>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           <div className="box box--stacked p-4">
             <div className="text-xs text-slate-500">Nilai Pagu Paket</div>
             <div className="text-xl font-bold text-emerald-600 mt-1">
-              Rp {Number(paket.nilai_pagu_paket || 0).toLocaleString("id-ID")}
+              Rp {Number(paket.nilai_pagu_paket || paket.nilai_pagu || 0).toLocaleString("id-ID")}
             </div>
           </div>
           <div className="box box--stacked p-4">
@@ -203,8 +339,11 @@ const MasaSanggahAction: React.FC = () => {
       <div className="box box--stacked p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
-            Daftar Berkas Sanggahan
+            Daftar Berkas Sanggahan Masuk
           </h3>
+          <span className="text-xs text-slate-500">
+            Ditampilkan secara transparan sesuai kepatuhan regulasi pengadaan barang/jasa
+          </span>
         </div>
 
         <div className="overflow-x-auto">
@@ -238,7 +377,7 @@ const MasaSanggahAction: React.FC = () => {
               {sanggahanList.length === 0 ? (
                 <Table.Tr>
                   <Table.Td colSpan={7} className="py-8 text-center text-slate-500">
-                    Belum ada sanggahan yang masuk untuk paket pengadaan ini.
+                    Belum ada sanggahan yang diajukan untuk paket pengadaan ini.
                   </Table.Td>
                 </Table.Tr>
               ) : (
@@ -288,7 +427,9 @@ const MasaSanggahAction: React.FC = () => {
                           Beri Balasan
                         </Button>
                       ) : (
-                        <span className="text-xs text-slate-400">Tersedia untuk Pokja</span>
+                        <span className="text-xs text-slate-400">
+                          {item.jawaban_sanggah ? "Telah Dibalas" : "Menunggu Tanggapan"}
+                        </span>
                       )}
                     </Table.Td>
                   </Table.Tr>
@@ -301,10 +442,10 @@ const MasaSanggahAction: React.FC = () => {
 
       {/* Modal Ajukan Sanggahan (Vendor) */}
       <Dialog open={showSubmitModal} onClose={() => setShowSubmitModal(false)} className="relative z-50">
-        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
-            <Dialog.Title className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <Lucide icon="ShieldAlert" className="w-5 h-5 text-warning" />
+        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white rounded-xl shadow-2xl border border-slate-200">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+            <Dialog.Title className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Lucide icon="ShieldAlert" className="w-5 h-5 text-amber-500" />
               Pengajuan Surat Sanggahan
             </Dialog.Title>
             <button onClick={() => setShowSubmitModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -314,7 +455,7 @@ const MasaSanggahAction: React.FC = () => {
 
           <form onSubmit={handleSubmitSanggahan} className="mt-5 space-y-4">
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+              <label className="text-xs font-semibold text-slate-600 uppercase">
                 Nomor Surat Resmi Sanggahan *
               </label>
               <FormInput
@@ -328,7 +469,7 @@ const MasaSanggahAction: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+              <label className="text-xs font-semibold text-slate-600 uppercase">
                 Tanggal Pengajuan *
               </label>
               <FormInput
@@ -341,7 +482,7 @@ const MasaSanggahAction: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+              <label className="text-xs font-semibold text-slate-600 uppercase">
                 Dokumen Bukti Sanggahan (PDF) *
               </label>
               <FormInput
@@ -355,7 +496,7 @@ const MasaSanggahAction: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+              <label className="text-xs font-semibold text-slate-600 uppercase">
                 Substansi & Alasan Sanggahan *
               </label>
               <FormTextarea
@@ -368,7 +509,7 @@ const MasaSanggahAction: React.FC = () => {
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
               <Button type="button" variant="outline-secondary" onClick={() => setShowSubmitModal(false)}>
                 Batal
               </Button>
@@ -382,9 +523,9 @@ const MasaSanggahAction: React.FC = () => {
 
       {/* Modal Review & Balasan (Pokja / Admin) */}
       <Dialog open={reviewModalOpen} onClose={() => setReviewModalOpen(false)} className="relative z-50">
-        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200/60">
-            <Dialog.Title className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white rounded-xl shadow-2xl border border-slate-200">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+            <Dialog.Title className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <Lucide icon="CheckSquare" className="w-5 h-5 text-primary" />
               Keputusan & Balasan Sanggahan Pokja
             </Dialog.Title>
@@ -396,17 +537,17 @@ const MasaSanggahAction: React.FC = () => {
           <form onSubmit={handleUpdateJawabanSanggahan} className="mt-5 space-y-4">
             <div>
               <div className="text-xs text-slate-500">Nomor Surat</div>
-              <div className="font-semibold text-slate-800 dark:text-white">{selectedSanggahan?.no_surat}</div>
+              <div className="font-semibold text-slate-800">{selectedSanggahan?.no_surat}</div>
             </div>
             <div>
               <div className="text-xs text-slate-500">Alasan Sanggahan Vendor</div>
-              <div className="p-3 bg-slate-50 dark:bg-darkmode-700 rounded text-sm text-slate-700 dark:text-slate-200">
+              <div className="p-3 bg-slate-50 rounded text-sm text-slate-700">
                 {selectedSanggahan?.alasan_sanggah}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+              <label className="text-xs font-semibold text-slate-600 uppercase">
                 Status Keputusan Pokja *
               </label>
               <FormSelect
@@ -421,7 +562,7 @@ const MasaSanggahAction: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">
+              <label className="text-xs font-semibold text-slate-600 uppercase">
                 Balasan Resmi Pokja Pemilihan *
               </label>
               <FormTextarea
@@ -434,12 +575,120 @@ const MasaSanggahAction: React.FC = () => {
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/60">
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
               <Button type="button" variant="outline-secondary" onClick={() => setReviewModalOpen(false)}>
                 Batal
               </Button>
               <Button type="submit" variant="primary" disabled={submitting}>
                 {submitting ? "Menyimpan..." : "Simpan Keputusan"}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Panel>
+      </Dialog>
+
+      {/* Modal Terbitkan Kontrak (Admin / PPK) */}
+      <Dialog open={contractModalOpen} onClose={() => setContractModalOpen(false)} className="relative z-50">
+        <Dialog.Panel className="p-6 w-full max-w-lg mx-auto bg-white rounded-xl shadow-2xl border border-slate-200">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+            <Dialog.Title className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Lucide icon="Briefcase" className="w-5 h-5 text-emerald-600" />
+              Penerbitan Kontrak Kerja Sama
+            </Dialog.Title>
+            <button onClick={() => setContractModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <Lucide icon="X" className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleTerbitkanKontrak} className="mt-5 space-y-4">
+            <div className="p-3 bg-slate-50 rounded-lg text-xs space-y-1">
+              <div>
+                <span className="text-slate-500">Paket Pengadaan:</span>{" "}
+                <span className="font-semibold text-slate-800">
+                  {lelang?.judul_lelang || paket.nama_paket}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500">Penyedia Pemenang:</span>{" "}
+                <span className="font-semibold text-emerald-600">
+                  {winnerPeserta?.vendor?.nama_perusahaan || `Vendor #${winnerPeserta?.vendor_id}`}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500">Nilai Kontrak:</span>{" "}
+                <span className="font-bold text-emerald-600 font-mono">
+                  Rp {Number(contractForm.nilaiKontrak || winnerPeserta?.nilai_penawaran || 0).toLocaleString("id-ID")}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 uppercase">
+                Nomor Kontrak Resmi (SPPBJ / SPK) *
+              </label>
+              <FormInput
+                type="text"
+                placeholder="Contoh: KNT/2026/X/001"
+                value={contractForm.nomorKontrak}
+                onChange={(e) => setContractForm({ ...contractForm, nomorKontrak: e.target.value })}
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-600 uppercase">
+                  Tanggal Kontrak *
+                </label>
+                <FormInput
+                  type="date"
+                  value={contractForm.tanggalKontrak}
+                  onChange={(e) => setContractForm({ ...contractForm, tanggalKontrak: e.target.value })}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-600 uppercase">
+                  Tanggal Mulai *
+                </label>
+                <FormInput
+                  type="date"
+                  value={contractForm.tanggalMulai}
+                  onChange={(e) => setContractForm({ ...contractForm, tanggalMulai: e.target.value })}
+                  required
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 uppercase">
+                Tanggal Selesai Pekerjaan *
+              </label>
+              <FormInput
+                type="date"
+                value={contractForm.tanggalSelesai}
+                onChange={(e) => setContractForm({ ...contractForm, tanggalSelesai: e.target.value })}
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-start gap-2">
+              <Lucide icon="Info" className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+              <span>
+                Menerbitkan kontrak akan menyelesaikan tahap Masa Sanggah dan mendaftarkan paket ini ke modul <strong>Monitoring Progress Pekerjaan & Surat Jalan</strong>.
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+              <Button type="button" variant="outline-secondary" onClick={() => setContractModalOpen(false)}>
+                Batal
+              </Button>
+              <Button type="submit" variant="primary" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                {submitting ? "Menerbitkan Kontrak..." : "Terbitkan & Buka Monitoring"}
               </Button>
             </div>
           </form>
