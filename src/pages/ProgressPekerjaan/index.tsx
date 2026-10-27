@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Lucide from "@/components/Base/Lucide";
 import { FormInput, FormSelect, FormTextarea } from "@/components/Base/Form";
 import Button from "@/components/Base/Button";
@@ -374,14 +375,23 @@ function Main() {
 
             {selected && (
               <div className="mt-5 space-y-6">
-                <div>
-                  <div className="text-xs text-slate-500 uppercase">Paket Pengadaan</div>
-                  <div className="text-base font-bold text-slate-800 dark:text-white mt-0.5">
-                    {selected.paket?.nama_paket}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs text-slate-500 uppercase">Paket Pengadaan</div>
+                    <div className="text-base font-bold text-slate-800 dark:text-white mt-0.5">
+                      {selected.paket?.nama_paket}
+                    </div>
+                    <div className="text-xs text-slate-500 font-mono mt-0.5">
+                      No Kontrak: {selected.nomor_kontrak || selected.no_kontrak || "-"}
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500 font-mono mt-0.5">
-                    No Kontrak: {selected.nomor_kontrak || selected.no_kontrak || "-"}
-                  </div>
+                  <Link
+                    to={`/dashboard/lelang/penagihan/${selected.id}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 w-fit transition shadow-sm"
+                  >
+                    <Lucide icon="Receipt" className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Lihat Penagihan & SPB</span>
+                  </Link>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-darkmode-700 rounded-lg text-sm">

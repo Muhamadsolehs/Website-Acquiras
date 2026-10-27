@@ -59,6 +59,11 @@ const adminMenu: Array<Menu | string> = [
     title: "Progress Pekerjaan",
   },
   {
+    icon: "CreditCard",
+    pathname: "/dashboard/lelang/penagihan",
+    title: "Penagihan & Pembayaran",
+  },
+  {
     icon: "Settings2",
     pathname: "/dashboard/pengaturan",
     title: "Pengaturan",
