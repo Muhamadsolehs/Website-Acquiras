@@ -70,7 +70,8 @@ const PenagihanAction: React.FC = () => {
     }
   }, [id]);
 
-  const isAdmin = currentUser?.role_id === 1 || currentUser?.role?.id === 1;
+  const userRole = localStorage.getItem("eproc_user_role") || (currentUser?.role !== undefined ? String(currentUser?.role) : "") || (currentUser?.role_id !== undefined ? String(currentUser?.role_id) : "");
+  const isAdmin = userRole === "1" || currentUser?.role_name === "Admin" || currentUser?.role === 1 || currentUser?.role_id === 1 || currentUser?.role?.id === 1;
 
   const handleOpenCreateInvoice = () => {
     const terminNext = penagihanList.length + 1;
